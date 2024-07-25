@@ -31,10 +31,15 @@ class Board {
     fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }
     fun emptyFieldsIndices() = fieldsIndicesWithColor(NONE)
 
-    fun draw(move: Move) = when (move) {
-        is SetMove -> setStone(move.toField, move.color)
-        is PushMove -> pushStone(move.fromField, move.toField)
-        is JumpMove -> jumpStone(move.fromField, move.toField)
+    fun draw(move: Move): Board {
+        if (move.capturedField != null) {
+            setStone(move.capturedField, NONE)
+        }
+        return when (move) {
+            is SetMove  -> setStone(move.toField, move.color)
+            is PushMove -> moveStone(move.fromField, move.toField)
+            is JumpMove -> moveStone(move.fromField, move.toField)
+        }
     }
 
     fun setStone(index: Int, color: Color): Board {
@@ -47,25 +52,7 @@ class Board {
         return fields[index]
     }
 
-    fun pushStone(fromIndex: Int, toIndex: Int): Board {
-        require(fromIndex in 0..<MAX_FIELDS)
-        require(toIndex in 0..<MAX_FIELDS)
-        require(fields[fromIndex] != NONE)
-        require(fields[toIndex] == NONE)
-
-        if (toIndex !in CONNECTIONS[fromIndex]) {
-            throw IllegalMoveException(fromIndex, toIndex)
-        }
-
-        val board = Board(fields)
-        board.fields[toIndex] = fields[fromIndex]
-        board.fields[fromIndex] = NONE
-        return board
-    }
-
-    fun jumpStone(fromIndex: Int, toIndex: Int): Board {
-        require(fromIndex in 0..<MAX_FIELDS)
-        require(toIndex in 0..<MAX_FIELDS)
+    fun moveStone(fromIndex: Int, toIndex: Int): Board {
         require(fields[fromIndex] != NONE)
         require(fields[toIndex] == NONE)
 

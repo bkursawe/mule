@@ -1,14 +1,13 @@
 package de.praxisit.muli.board
 
-import de.praxisit.muli.board.Phase.JUMPING
-import de.praxisit.muli.board.Phase.LOOSE
+import de.praxisit.muli.board.Phase.*
 
 class Player private constructor(val color: Color, val stones: Int, val stonesSet: Int, val phase: Phase) {
 
     val remainingStones: Int
         get() = 9 - stonesSet
 
-    constructor(color: Color) : this(color, 9, 0, Phase.SETTING)
+    constructor(color: Color) : this(color, 9, 0, SETTING)
 
     fun loseStone(): Player {
         return if (stones > 4) {
@@ -26,10 +25,10 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
     }
 
     fun legalMoves(board: Board): List<Move> = when (phase) {
-        Phase.SETTING -> settingMoves(board)
-        Phase.MOVING  -> pushingMoves(board)
-        JUMPING       -> jumpMoves(board)
-        LOOSE         -> emptyList()
+        SETTING -> settingMoves(board)
+        MOVING  -> pushingMoves(board)
+        JUMPING -> jumpMoves(board)
+        LOOSE   -> emptyList()
     }
 
     private fun settingMoves(board: Board): List<Move> = board.emptyFieldsIndices().map { SetMove(color, it) }
@@ -40,5 +39,9 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
 
     private fun jumpMoves(board: Board): List<Move> = board.fieldsIndicesWithColor(color).flatMap { fromField ->
         board.emptyFieldsIndices().map { emptyField -> JumpMove(color, fromField, emptyField) }
+    }
+
+    fun chooseMove(): Move {
+        TODO("Not yet implemented")
     }
 }

@@ -59,7 +59,7 @@ class BoardTest {
         fun `from used field to empty field`() {
             val board = emptyBoard.setStone(10, WHITE)
 
-            val endBoard = board.pushStone(10, 11)
+            val endBoard = board.moveStone(10, 11)
 
             assertThat(endBoard.getStone(10)).isEqualTo(Color.NONE)
             assertThat(endBoard.getStone(11)).isEqualTo(WHITE)
@@ -71,60 +71,19 @@ class BoardTest {
                 .setStone(10, WHITE)
                 .setStone(9, BLACK)
 
-            assertThatThrownBy { board.pushStone(10, 9) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { board.moveStone(10, 9) }.isInstanceOf(IllegalArgumentException::class.java)
         }
 
         @Test
         fun `from unused field to another unused field`() {
-            assertThatThrownBy { emptyBoard.pushStone(3, 10) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { emptyBoard.moveStone(3, 10) }.isInstanceOf(IllegalArgumentException::class.java)
         }
 
         @Test
         fun `from used field to the same field`() {
             val board = emptyBoard.setStone(15, BLACK)
 
-            assertThatThrownBy { board.pushStone(15, 15) }.isInstanceOf(IllegalArgumentException::class.java)
-        }
-
-        @Test
-        fun `from used field to unreachable unused field`() {
-            val board = emptyBoard.setStone(15, BLACK)
-
-            assertThatThrownBy { board.pushStone(15, 17) }.isInstanceOf(IllegalMoveException::class.java)
-        }
-    }
-
-    @Nested
-    inner class JumpStone {
-        @Test
-        fun `from used field to empty field`() {
-            val board = emptyBoard.setStone(10, WHITE)
-
-            val endBoard = board.jumpStone(10, 20)
-
-            assertThat(endBoard.getStone(10)).isEqualTo(Color.NONE)
-            assertThat(endBoard.getStone(20)).isEqualTo(WHITE)
-        }
-
-        @Test
-        fun `from used field to another used field`() {
-            val board = emptyBoard
-                .setStone(10, WHITE)
-                .setStone(9, BLACK)
-
-            assertThatThrownBy { board.jumpStone(10, 9) }.isInstanceOf(IllegalArgumentException::class.java)
-        }
-
-        @Test
-        fun `from unused field to another unused field`() {
-            assertThatThrownBy { emptyBoard.jumpStone(3, 10) }.isInstanceOf(IllegalArgumentException::class.java)
-        }
-
-        @Test
-        fun `from used field to the same field`() {
-            val board = emptyBoard.setStone(15, BLACK)
-
-            assertThatThrownBy { board.jumpStone(15, 15) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { board.moveStone(15, 15) }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 

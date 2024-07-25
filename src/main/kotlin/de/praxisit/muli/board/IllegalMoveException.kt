@@ -1,3 +1,3 @@
 package de.praxisit.muli.board
 
-class IllegalMoveException(fromIndex: Int, toIndex: Int) : Throwable()
+class IllegalMoveException(val move: Move, reason: String) : Throwable(reason)
