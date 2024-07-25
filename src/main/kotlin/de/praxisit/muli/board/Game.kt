@@ -22,9 +22,14 @@ class Game() {
     private fun showWinner() {
         if (white.phase == LOOSE || white.legalMoves(board).isEmpty()) println("White is the winner")
         if (black.phase == LOOSE || black.legalMoves(board).isEmpty()) println("Black is the winner")
+        println("No winner yet")
     }
 
     fun noLooser() =
         white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(board).isNotEmpty()
 
+}
+
+fun main() {
+    Game().start()
 }

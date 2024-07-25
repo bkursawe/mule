@@ -31,7 +31,11 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
         LOOSE   -> emptyList()
     }
 
-    private fun settingMoves(board: Board): List<Move> = board.emptyFieldsIndices().map { SetMove(color, it) }
+    private fun settingMoves(board: Board): List<Move> {
+        val (captureMoves, normalMoves) = board.emptyFieldsIndices().partition { move -> board.closeMule(move) }
+        return captureMoves.flatMap { field -> board.capturePieces(color.opposite, field) }
+            .map { SetMove(color, it) }
+    }
 
     private fun pushingMoves(board: Board): List<Move> = board.fieldsIndicesWithColor(color).flatMap { fromField ->
         board.connectedEmptyFields(fromField).map { emptyField -> PushMove(color, fromField, emptyField) }

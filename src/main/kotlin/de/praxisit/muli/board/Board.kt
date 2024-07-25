@@ -96,6 +96,10 @@ class Board {
         """.trimIndent()
     }
 
+    fun capturePieces(color: Color): List<Int> {
+
+    }
+
     companion object {
         val MULES = arrayOf(
             listOf(0, 1, 2),
