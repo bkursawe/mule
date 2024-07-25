@@ -21,7 +21,10 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
 
     fun setStone(): Player {
         check(stonesSet != 9)
-        return Player(color, stones, stonesSet + 1, phase)
+        check(phase == SETTING)
+
+        val newPhase = if (stonesSet == 8) MOVING else SETTING
+        return Player(color, stones, stonesSet + 1, newPhase)
     }
 
     fun legalMoves(board: Board): List<Move> = when (phase) {
@@ -32,9 +35,9 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
     }
 
     private fun settingMoves(board: Board): List<Move> {
-        val (captureMoves, normalMoves) = board.emptyFieldsIndices().partition { move -> board.closeMule(move) }
-        return captureMoves.flatMap { field -> board.capturePieces(color.opposite, field) }
-            .map { SetMove(color, it) }
+        val (captureMoves, normalMoves) = board.emptyFieldsIndices().partition { move -> board.willCloseMule(move, color) }
+        return captureMoves.flatMap { field -> board.capturablePieces(color.opposite).map { SetMove(color, field, it) } } +
+                normalMoves.map { SetMove(color, it) }
     }
 
     private fun pushingMoves(board: Board): List<Move> = board.fieldsIndicesWithColor(color).flatMap { fromField ->
@@ -45,7 +48,7 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
         board.emptyFieldsIndices().map { emptyField -> JumpMove(color, fromField, emptyField) }
     }
 
-    fun chooseMove(): Move {
-        TODO("Not yet implemented")
+    fun chooseMove(board: Board): Move {
+        return legalMoves(board).first()
     }
 }

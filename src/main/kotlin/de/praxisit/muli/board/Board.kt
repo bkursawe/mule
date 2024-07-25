@@ -19,16 +19,19 @@ import de.praxisit.muli.board.Color.NONE
 //
 class Board {
     private val fields: Array<Color>
+    private val mules: Set<Int>
 
     constructor() {
         fields = Array(24) { _ -> NONE }
+        mules = emptySet()
     }
 
-    constructor(initFields: Array<Color>) {
+    constructor(initFields: Array<Color>, initMules: Set<Int>) {
         fields = initFields.copyOf()
+        mules = initMules
     }
 
-    fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }
+    fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
     fun emptyFieldsIndices() = fieldsIndicesWithColor(NONE)
 
     fun draw(move: Move): Board {
@@ -43,7 +46,7 @@ class Board {
     }
 
     fun setStone(index: Int, color: Color): Board {
-        val board = Board(fields)
+        val board = Board(fields, mules)
         board.fields[index] = color
         return board
     }
@@ -56,7 +59,7 @@ class Board {
         require(fields[fromIndex] != NONE)
         require(fields[toIndex] == NONE)
 
-        val board = Board(fields)
+        val board = Board(fields, mules)
         board.fields[toIndex] = fields[fromIndex]
         board.fields[fromIndex] = NONE
         return board
@@ -64,16 +67,7 @@ class Board {
 
     fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] != NONE }
 
-    fun completeMule(index: Int): Color {
-        require(index in 0..<MAX_MULES)
-
-        val mule = MULES[index]
-        val colors = setOf(fields[mule[0]], fields[mule[1]], fields[mule[2]])
-        return if (colors.size == 3) colors.first()
-        else NONE
-    }
-
-    fun drawBoard(): String {
+    fun printBoard(): String {
         fun f(index: Int) = when (fields[index]) {
             NONE        -> "O"
             Color.WHITE -> "W"
@@ -96,9 +90,18 @@ class Board {
         """.trimIndent()
     }
 
-    fun capturePieces(color: Color): List<Int> {
-
+    fun capturablePieces(color: Color): Set<Int> {
+        return fieldsIndicesWithColor(color).filter { !willCloseMule(it, color) }.toSet()
     }
+
+    fun willCloseMule(field: Int, color: Color) =
+        COMPLETABLE_MULES[field].first().first.color == color &&
+                COMPLETABLE_MULES[field].first().second.color == color ||
+                COMPLETABLE_MULES[field].last().first.color == color &&
+                COMPLETABLE_MULES[field].last().second.color == color
+
+    private val Int.color: Color
+        get() = fields[this]
 
     companion object {
         val MULES = arrayOf(
@@ -119,6 +122,11 @@ class Board {
             listOf(5, 13, 20),
             listOf(2, 14, 23)
         )
+
+        val COMPLETABLE_MULES: List<List<Pair<Int, Int>>>
+            get() = (0..<24).map { fieldIndex ->
+                MULES.filter { mule -> fieldIndex in mule }.map { it - fieldIndex }.map { Pair(it.first(), it.last()) }
+            }
 
         val CONNECTIONS = arrayOf(
             listOf(1, 9),
@@ -148,6 +156,5 @@ class Board {
         )
 
         const val MAX_FIELDS = 24
-        const val MAX_MULES = 16
     }
 }
