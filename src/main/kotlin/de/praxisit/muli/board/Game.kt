@@ -9,11 +9,13 @@ class Game() {
     private var black = Player(BLACK)
     private var board = Board()
     private var activePlayer = white
+    private var drawNumber = 0
 
     fun start() {
         while (noLooser()) {
             println(board.printBoard())
             val move = activePlayer.chooseMove(board)
+            print("${drawNumber++}: ")
             println(move)
             if (move is SetMove) activePlayer.setStone()
             if (move.capturedField != null) activePlayer.opposite().loseStone()

@@ -6,7 +6,7 @@ import de.praxisit.muli.board.Color.NONE
 
 @Suppress("LeakingThis", "kotlin:S1192")
 sealed class Move(val color: Color, val toField: Int, val capturedField: Int?) {
-    abstract fun addCaptureField(captureField: Int): Move
+    abstract fun addCaptureField(field: Int): Move
 
     init {
         if (color == NONE) throw IllegalMoveException(this, "color is NONE")
@@ -22,10 +22,10 @@ class SetMove(color: Color, toField: Int, capturedField: Int? = null) : Move(col
             throw IllegalMoveException(this, "toField is captured")
     }
 
-    override fun addCaptureField(captureField: Int): SetMove {
-        if (captureField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "captureField not in [0, 23]")
-        if (captureField == toField) throw IllegalMoveException(this, "captureField == toField")
-        return SetMove(color, toField, captureField)
+    override fun addCaptureField(field: Int): SetMove {
+        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "field not in [0, 23]")
+        if (field == toField) throw IllegalMoveException(this, "field == toField")
+        return SetMove(color, toField, field)
     }
 
     override fun toString() = "SetMove($color, $toField${capturedField?.let { ", $it" } ?: ""})"
@@ -48,11 +48,11 @@ class PushMove(color: Color, val fromField: Int, toField: Int, capturedField: In
         }
     }
 
-    override fun addCaptureField(captureField: Int): PushMove {
-        if (captureField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "captureField not in [0, 23]")
-        if (captureField == fromField) throw IllegalMoveException(this, "captureField == fromField")
-        if (captureField == toField) throw IllegalMoveException(this, "captureField == toField")
-        return PushMove(color, fromField, toField, captureField)
+    override fun addCaptureField(field: Int): PushMove {
+        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "field not in [0, 23]")
+        if (field == fromField) throw IllegalMoveException(this, "field == fromField")
+        if (field == toField) throw IllegalMoveException(this, "field == toField")
+        return PushMove(color, fromField, toField, field)
     }
 
     override fun toString() = "PushMove($color, $fromField -> $toField${capturedField?.let { ", $it" } ?: ""})"
@@ -72,11 +72,11 @@ class JumpMove(color: Color, val fromField: Int, toField: Int, capturedField: In
             throw IllegalMoveException(this, "duplicate fields")
     }
 
-    override fun addCaptureField(captureField: Int): JumpMove {
-        if (captureField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "captureField not in [0, 23]")
-        if (captureField == fromField) throw IllegalMoveException(this, "captureField == fromField")
-        if (captureField == toField) throw IllegalMoveException(this, "captureField == toField")
-        return JumpMove(color, fromField, toField, captureField)
+    override fun addCaptureField(field: Int): JumpMove {
+        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "field not in [0, 23]")
+        if (field == fromField) throw IllegalMoveException(this, "field == fromField")
+        if (field == toField) throw IllegalMoveException(this, "field == toField")
+        return JumpMove(color, fromField, toField, field)
     }
 
     override fun toString() = "JumpMove($color, $fromField -> $toField${capturedField?.let { ", $it" } ?: ""})"
