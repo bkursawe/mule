@@ -5,8 +5,8 @@ import de.praxisit.muli.board.Color.WHITE
 import de.praxisit.muli.board.Phase.LOOSE
 
 class Game() {
-    private val white = Player(WHITE)
-    private val black = Player(BLACK)
+    private var white = Player(WHITE)
+    private var black = Player(BLACK)
     private var board = Board()
     private var activePlayer = white
 

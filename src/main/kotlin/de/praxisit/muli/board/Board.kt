@@ -65,7 +65,7 @@ class Board {
         return board
     }
 
-    fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] != NONE }
+    fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] == NONE }
 
     fun printBoard(): String {
         fun f(index: Int) = when (fields[index]) {

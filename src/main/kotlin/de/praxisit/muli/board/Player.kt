@@ -2,7 +2,7 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Phase.*
 
-class Player private constructor(val color: Color, val stones: Int, val stonesSet: Int, val phase: Phase) {
+class Player private constructor(val color: Color, var stones: Int, var stonesSet: Int, var phase: Phase) {
 
     val remainingStones: Int
         get() = 9 - stonesSet
@@ -10,21 +10,24 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
     constructor(color: Color) : this(color, 9, 0, SETTING)
 
     fun loseStone(): Player {
-        return if (stones > 4) {
-            Player(color, stones - 1, stonesSet, phase)
+        if (stones > 4) {
+            stones -= 1
         } else if (stones == 4) {
-            Player(color, 3, stonesSet, JUMPING)
+            stones = 3
+            phase = JUMPING
         } else {
-            Player(color, 2, stonesSet, LOOSE)
+            stones = 2
+            phase = LOOSE
         }
+        return this
     }
 
-    fun setStone(): Player {
+    fun setStone() {
         check(stonesSet != 9)
         check(phase == SETTING)
 
-        val newPhase = if (stonesSet == 8) MOVING else SETTING
-        return Player(color, stones, stonesSet + 1, newPhase)
+        stonesSet += 1
+        phase = if (stonesSet == 9) MOVING else SETTING
     }
 
     fun legalMoves(board: Board): List<Move> = when (phase) {

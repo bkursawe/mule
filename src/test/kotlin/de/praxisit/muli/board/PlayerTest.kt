@@ -2,6 +2,7 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Color.BLACK
 import de.praxisit.muli.board.Color.WHITE
+import de.praxisit.muli.board.Phase.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -33,22 +34,22 @@ class PlayerTest {
     @CsvSource(
         value = [
             "1,8,true",
-            "9,0,true",
+            "8,1,true",
             "10,,false"
         ]
     )
     fun `set some stones`(stones: Int, remainingStones: Int?, expected: Boolean) {
-        var player = Player(WHITE)
+        val player = Player(WHITE)
         if (expected) {
             for (i in 0 until stones) {
-                player = player.setStone()
+                player.setStone()
             }
             assertThat(player.stonesSet).isEqualTo(stones)
             assertThat(player.remainingStones).isEqualTo(9 - stones)
         } else {
             assertThatThrownBy {
                 for (i in 0 until stones) {
-                    player = player.setStone()
+                    player.setStone()
                 }
             }.isInstanceOf(IllegalStateException::class.java)
         }
@@ -59,20 +60,33 @@ class PlayerTest {
         value = [
             "1,8,SETTING",
             "3,6,SETTING",
-            "5,4,SETTING",
-            "6,3,JUMPING",
-            "7,2,LOOSE"
+            "8,1,SETTING",
+            "9,0,MOVING"
         ]
     )
-    fun `lose stones`(numberOfStones: Int, numberOfLeftStones: Int, expectedPhase: Phase) {
-        var player = Player(WHITE)
+    fun `set stones changes phase`(numberOfStones: Int, numberOfLeftStones: Int, expectedPhase: Phase) {
+        val player = Player(WHITE)
         for (i in 0 until numberOfStones) {
-            player = player.loseStone()
+            player.setStone()
         }
 
         assertThat(player.color).isEqualTo(WHITE)
-        assertThat(player.stones).isEqualTo(numberOfLeftStones)
+        assertThat(player.remainingStones).isEqualTo(numberOfLeftStones)
         assertThat(player.phase).isEqualTo(expectedPhase)
+    }
+
+    @Test
+    fun `lose stones`() {
+        val player = Player(WHITE)
+        repeat(9) {
+            player.setStone()
+        }
+        repeat(5) {
+            player.loseStone()
+            assertThat(player.phase).isEqualTo(MOVING)
+        }
+        player.loseStone()
+        assertThat(player.phase).isEqualTo(JUMPING)
     }
 
     @Nested
