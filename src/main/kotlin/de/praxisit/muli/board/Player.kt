@@ -42,8 +42,9 @@ class Player private constructor(val color: Color, var stones: Int, var stonesSe
 
     fun extendMovesByCaptures(moves: List<Move>, board: Board): List<Move> {
         val (captureMoves, normalMoves) = moves.partition { move -> board.willCloseMule(move.toField, color) }
-        captureMoves.flatMap { move -> board.capturablePieces(color.opposite).map { captureField -> move.addCaptureField(captureField) } }
-        return normalMoves
+        return captureMoves.flatMap { move ->
+            board.capturablePieces(color.opposite).map { captureField -> move.addCaptureField(captureField) }
+        } + normalMoves
     }
 
     private fun settingMoves(board: Board): List<Move> {

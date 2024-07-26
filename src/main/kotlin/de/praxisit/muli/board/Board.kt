@@ -35,13 +35,14 @@ class Board {
     fun emptyFieldsIndices() = fieldsIndicesWithColor(NONE)
 
     fun draw(move: Move): Board {
+        var board = this
         if (move.capturedField != null) {
-            setStone(move.capturedField, NONE)
+            board = setStone(move.capturedField, NONE)
         }
         return when (move) {
-            is SetMove  -> setStone(move.toField, move.color)
-            is PushMove -> moveStone(move.fromField, move.toField)
-            is JumpMove -> moveStone(move.fromField, move.toField)
+            is SetMove  -> board.setStone(move.toField, move.color)
+            is PushMove -> board.moveStone(move.fromField, move.toField)
+            is JumpMove -> board.moveStone(move.fromField, move.toField)
         }
     }
 

@@ -28,9 +28,9 @@ class Game() {
     private fun Player.opposite() = if (this == white) black else white
 
     private fun showWinner() {
-        if (white.phase == LOOSE || white.legalMoves(board).isEmpty()) println("White is the winner")
-        if (black.phase == LOOSE || black.legalMoves(board).isEmpty()) println("Black is the winner")
-        println("No winner yet")
+        if (white.phase == LOOSE || white.legalMoves(board).isEmpty()) println("Black is the winner")
+        else if (black.phase == LOOSE || black.legalMoves(board).isEmpty()) println("White is the winner")
+        else println("No winner yet")
     }
 
     fun noLooser() =
