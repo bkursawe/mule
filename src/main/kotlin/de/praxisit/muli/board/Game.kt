@@ -15,12 +15,8 @@ class Game() {
             println(board.printBoard())
             val move = activePlayer.chooseMove(board)
             println(move)
-            if (move is SetMove) {
-                activePlayer.setStone()
-            }
-            if (move.capturedField != null) {
-                activePlayer.opposite().loseStone()
-            }
+            if (move is SetMove) activePlayer.setStone()
+            if (move.capturedField != null) activePlayer.opposite().loseStone()
             board = board.draw(move)
             activePlayer = if (activePlayer == white) black else white
         }

@@ -4,6 +4,7 @@ import de.praxisit.muli.board.Color.BLACK
 import de.praxisit.muli.board.Color.WHITE
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -59,11 +60,83 @@ class MoveTest {
     fun `create illegal moves`(method: String, color: Color, from: Int?, to: Int, captured: Int?) {
         assertThatThrownBy {
             when (method) {
-                "SET"  -> SetMove(color, to, captured)
+                "SET" -> SetMove(color, to, captured)
                 "PUSH" -> PushMove(color, from!!, to, captured)
                 "JUMP" -> JumpMove(color, from!!, to, captured)
-                else   -> throw IllegalArgumentException("Unexpected method: $method")
+                else -> throw IllegalArgumentException("Unexpected method: $method")
             }
         }.isInstanceOf(IllegalMoveException::class.java)
+    }
+
+    @Nested
+    inner class AddCaptureField {
+        @Test
+        fun `add capture field to SetMove`() {
+            val move = SetMove(WHITE, 1)
+
+            val newMove = move.addCaptureField(2)
+
+            assertThat(newMove).isEqualTo(SetMove(WHITE, 1, 2))
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            value = [
+                "1",
+                "-1",
+                "24"
+            ]
+        )
+        fun `add capture field to SetMove with invalid field`(captureField: Int) {
+            assertThatThrownBy { SetMove(WHITE, 1).addCaptureField(captureField) }
+                .isInstanceOf(IllegalMoveException::class.java)
+        }
+
+        @Test
+        fun `add capture field to PushMove`() {
+            val move = PushMove(BLACK, 1, 2)
+
+            val newMove = move.addCaptureField(3)
+
+            assertThat(newMove).isEqualTo(PushMove(BLACK, 1, 2, 3))
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            value = [
+                "1",
+                "2",
+                "-1",
+                "24"
+            ]
+        )
+        fun `add capture field to PushMove with invalid field`(captureField: Int) {
+            assertThatThrownBy { PushMove(WHITE, 1, 2).addCaptureField(captureField) }
+                .isInstanceOf(IllegalMoveException::class.java)
+        }
+
+        @Test
+        fun `add capture field to JumpMove`() {
+            val move = JumpMove(WHITE, 1, 2)
+
+            val newMove = move.addCaptureField(3)
+
+            assertThat(newMove).isEqualTo(JumpMove(WHITE, 1, 2, 3))
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            value = [
+                "1",
+                "2",
+                "-1",
+                "24"
+            ]
+        )
+        fun `add capture field to JumpMove with invalid field`(captureField: Int) {
+            assertThatThrownBy { JumpMove(WHITE, 1, 2).addCaptureField(captureField) }
+                .isInstanceOf(IllegalMoveException::class.java)
+        }
+
     }
 }

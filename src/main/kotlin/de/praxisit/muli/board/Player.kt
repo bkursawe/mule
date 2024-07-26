@@ -30,17 +30,24 @@ class Player private constructor(val color: Color, var stones: Int, var stonesSe
         phase = if (stonesSet == 9) MOVING else SETTING
     }
 
-    fun legalMoves(board: Board): List<Move> = when (phase) {
-        SETTING -> settingMoves(board)
-        MOVING  -> pushingMoves(board)
-        JUMPING -> jumpMoves(board)
-        LOOSE   -> emptyList()
+    fun legalMoves(board: Board): List<Move> {
+        val moves = when (phase) {
+            SETTING -> settingMoves(board)
+            MOVING  -> pushingMoves(board)
+            JUMPING -> jumpMoves(board)
+            LOOSE   -> emptyList()
+        }
+        return extendMovesByCaptures(moves, board)
+    }
+
+    fun extendMovesByCaptures(moves: List<Move>, board: Board): List<Move> {
+        val (captureMoves, normalMoves) = moves.partition { move -> board.willCloseMule(move.toField, color) }
+        captureMoves.flatMap { move -> board.capturablePieces(color).map { captureField -> move.addCaptureField(captureField) } }
+        return normalMoves
     }
 
     private fun settingMoves(board: Board): List<Move> {
-        val (captureMoves, normalMoves) = board.emptyFieldsIndices().partition { move -> board.willCloseMule(move, color) }
-        return captureMoves.flatMap { field -> board.capturablePieces(color.opposite).map { SetMove(color, field, it) } } +
-                normalMoves.map { SetMove(color, it) }
+        return board.emptyFieldsIndices().map { SetMove(color, it) }
     }
 
     private fun pushingMoves(board: Board): List<Move> = board.fieldsIndicesWithColor(color).flatMap { fromField ->
