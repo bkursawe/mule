@@ -18,28 +18,21 @@ import de.praxisit.muli.board.Phase.LOOSE
 //   |        |        |
 //  21-------22-------23
 //
-class Board {
-    private val fields: Array<Color>
-    private val mules: Set<Int>
-    private val white: Player
-    private val black: Player
-    val activePlayerColor: Color
+class Board(
+    private val fields: Array<Color> = Array(24) { _ -> NONE },
+    private val mules: Set<Int> = emptySet(),
+    private val white: Player = Player(WHITE),
+    private val black: Player = Player(BLACK),
+    internal val activePlayerColor: Color = WHITE
+) {
 
-    constructor() {
-        fields = Array(24) { _ -> NONE }
-        mules = emptySet()
-        white = Player(WHITE)
-        black = Player(BLACK)
-        activePlayerColor = WHITE
-    }
-
-    constructor(initFields: Array<Color>, initMules: Set<Int>, white: Player, black: Player, activePlayer: Color) {
-        fields = initFields.copyOf()
-        mules = initMules
-        this.white = white
-        this.black = black
-        this.activePlayerColor = activePlayer
-    }
+    private fun copy(
+        fields: Array<Color> = this.fields,
+        mules: Set<Int> = this.mules,
+        white: Player = this.white,
+        black: Player = this.black,
+        activePlayer: Color = this.activePlayerColor
+    ) = Board(fields, mules, white, black, activePlayer)
 
     fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
     fun emptyFieldsIndices() = fieldsIndicesWithColor(NONE)
@@ -59,23 +52,23 @@ class Board {
     }
 
     private fun playerLooseStone() = if (activePlayerColor == WHITE)
-        Board(fields, mules, white, black.loseStone(), activePlayerColor)
+        copy(black = black.loseStone())
     else
-        Board(fields, mules, white.loseStone(), black, activePlayerColor)
+        copy(white = white.loseStone())
 
     private fun playerSetStone() = if (activePlayerColor == WHITE)
-        Board(fields, mules, white.setStone(), black, activePlayerColor)
+        copy(white = white.setStone())
     else
-        Board(fields, mules, white, black.setStone(), activePlayerColor)
+        copy(black = black.setStone())
 
     private fun Color.opposite() = if (this == WHITE) BLACK else WHITE
 
     private fun Color.player() = if (this == WHITE) white else black
 
-    internal fun changePlayer() = Board(fields, mules, white, black, activePlayerColor.opposite())
+    internal fun changePlayer() = copy(activePlayer = activePlayerColor.opposite())
 
     fun setStone(index: Int, color: Color): Board {
-        val board = Board(fields, mules, white, black, activePlayerColor)
+        val board = copy(fields = fields.copyOf())
         board.fields[index] = color
         return board
     }
@@ -88,7 +81,7 @@ class Board {
         require(fields[fromIndex] != NONE)
         require(fields[toIndex] == NONE)
 
-        val board = Board(fields, mules, white, black, activePlayerColor)
+        val board = copy(fields = fields.copyOf())
         board.fields[toIndex] = fields[fromIndex]
         board.fields[fromIndex] = NONE
         return board
