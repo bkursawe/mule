@@ -200,4 +200,13 @@ class BoardTest {
                 .isEqualToIgnoringWhitespace(expected)
         }
     }
+
+    @Test
+    fun `board change player`() {
+        assertThat(emptyBoard.activePlayerColor).isEqualTo(WHITE)
+        val board1 = emptyBoard.changePlayer()
+        assertThat(board1.activePlayerColor).isEqualTo(BLACK)
+        val board2 = board1.changePlayer()
+        assertThat(board2.activePlayerColor).isEqualTo(WHITE)
+    }
 }

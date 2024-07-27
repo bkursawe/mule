@@ -2,7 +2,8 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Color.BLACK
 import de.praxisit.muli.board.Color.WHITE
-import de.praxisit.muli.board.Phase.*
+import de.praxisit.muli.board.Phase.JUMPING
+import de.praxisit.muli.board.Phase.MOVING
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -39,17 +40,17 @@ class PlayerTest {
         ]
     )
     fun `set some stones`(stones: Int, remainingStones: Int?, expected: Boolean) {
-        val player = Player(WHITE)
+        var player = Player(WHITE)
         if (expected) {
             for (i in 0 until stones) {
-                player.setStone()
+                player = player.setStone()
             }
             assertThat(player.stonesSet).isEqualTo(stones)
             assertThat(player.remainingStones).isEqualTo(9 - stones)
         } else {
             assertThatThrownBy {
                 for (i in 0 until stones) {
-                    player.setStone()
+                    player = player.setStone()
                 }
             }.isInstanceOf(IllegalStateException::class.java)
         }
@@ -65,9 +66,9 @@ class PlayerTest {
         ]
     )
     fun `set stones changes phase`(numberOfStones: Int, numberOfLeftStones: Int, expectedPhase: Phase) {
-        val player = Player(WHITE)
+        var player = Player(WHITE)
         for (i in 0 until numberOfStones) {
-            player.setStone()
+            player = player.setStone()
         }
 
         assertThat(player.color).isEqualTo(WHITE)
@@ -77,15 +78,15 @@ class PlayerTest {
 
     @Test
     fun `lose stones`() {
-        val player = Player(WHITE)
+        var player = Player(WHITE)
         repeat(9) {
-            player.setStone()
+            player = player.setStone()
         }
         repeat(5) {
-            player.loseStone()
+            player = player.loseStone()
             assertThat(player.phase).isEqualTo(MOVING)
         }
-        player.loseStone()
+        player = player.loseStone()
         assertThat(player.phase).isEqualTo(JUMPING)
     }
 

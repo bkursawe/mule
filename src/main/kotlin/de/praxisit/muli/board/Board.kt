@@ -1,6 +1,7 @@
 package de.praxisit.muli.board
 
-import de.praxisit.muli.board.Color.NONE
+import de.praxisit.muli.board.Color.*
+import de.praxisit.muli.board.Phase.LOOSE
 
 //
 //   0--------1--------2
@@ -20,15 +21,24 @@ import de.praxisit.muli.board.Color.NONE
 class Board {
     private val fields: Array<Color>
     private val mules: Set<Int>
+    private val white: Player
+    private val black: Player
+    val activePlayerColor: Color
 
     constructor() {
         fields = Array(24) { _ -> NONE }
         mules = emptySet()
+        white = Player(WHITE)
+        black = Player(BLACK)
+        activePlayerColor = WHITE
     }
 
-    constructor(initFields: Array<Color>, initMules: Set<Int>) {
+    constructor(initFields: Array<Color>, initMules: Set<Int>, white: Player, black: Player, activePlayer: Color) {
         fields = initFields.copyOf()
         mules = initMules
+        this.white = white
+        this.black = black
+        this.activePlayerColor = activePlayer
     }
 
     fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
@@ -36,18 +46,36 @@ class Board {
 
     fun draw(move: Move): Board {
         var board = this
-        if (move.capturedField != null) {
-            board = setStone(move.capturedField, NONE)
-        }
-        return when (move) {
+        if (move is SetMove) board = board.playerSetStone()
+
+        board = when (move) {
             is SetMove  -> board.setStone(move.toField, move.color)
             is PushMove -> board.moveStone(move.fromField, move.toField)
             is JumpMove -> board.moveStone(move.fromField, move.toField)
         }
+
+        if (move.capturedField != null) board = playerLooseStone().setStone(move.capturedField, NONE)
+        return board.changePlayer()
     }
 
+    private fun playerLooseStone() = if (activePlayerColor == WHITE)
+        Board(fields, mules, white, black.loseStone(), activePlayerColor)
+    else
+        Board(fields, mules, white.loseStone(), black, activePlayerColor)
+
+    private fun playerSetStone() = if (activePlayerColor == WHITE)
+        Board(fields, mules, white.setStone(), black, activePlayerColor)
+    else
+        Board(fields, mules, white, black.setStone(), activePlayerColor)
+
+    private fun Color.opposite() = if (this == WHITE) BLACK else WHITE
+
+    private fun Color.player() = if (this == WHITE) white else black
+
+    internal fun changePlayer() = Board(fields, mules, white, black, activePlayerColor.opposite())
+
     fun setStone(index: Int, color: Color): Board {
-        val board = Board(fields, mules)
+        val board = Board(fields, mules, white, black, activePlayerColor)
         board.fields[index] = color
         return board
     }
@@ -60,7 +88,7 @@ class Board {
         require(fields[fromIndex] != NONE)
         require(fields[toIndex] == NONE)
 
-        val board = Board(fields, mules)
+        val board = Board(fields, mules, white, black, activePlayerColor)
         board.fields[toIndex] = fields[fromIndex]
         board.fields[fromIndex] = NONE
         return board
@@ -68,11 +96,13 @@ class Board {
 
     fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] == NONE }
 
+    fun chooseMove() = activePlayerColor.player().chooseMove(this)
+
     fun printBoard(): String {
         fun f(index: Int) = when (fields[index]) {
-            NONE        -> "O"
-            Color.WHITE -> "W"
-            Color.BLACK -> "B"
+            NONE  -> "O"
+            WHITE -> "W"
+            BLACK -> "B"
         }
         return """
              ${f(0)}--------${f(1)}--------${f(2)}
@@ -103,6 +133,16 @@ class Board {
 
     private val Int.color: Color
         get() = fields[this]
+
+    fun showWinner() {
+        if (white.phase == LOOSE || white.legalMoves(this).isEmpty()) println("Black is the winner")
+        else if (black.phase == LOOSE || black.legalMoves(this).isEmpty()) println("White is the winner")
+        else println("No winner yet")
+    }
+
+    fun noLooser() =
+        white.phase != LOOSE && black.phase != LOOSE && activePlayerColor.player().legalMoves(this).isNotEmpty()
+
 
     companion object {
         val MULES = arrayOf(
