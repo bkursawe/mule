@@ -10,8 +10,7 @@ class Game() {
             val move = board.chooseMove()
             print("${drawNumber++}: ")
             println(move)
-            board = board.draw(move)
-            board.switchPlayer()
+            board = board.draw(move).switchPlayer()
         }
         board.showWinner()
     }
