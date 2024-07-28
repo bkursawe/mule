@@ -67,6 +67,13 @@ class MoveTest {
         }.isInstanceOf(IllegalMoveException::class.java)
     }
 
+    @Test
+    fun `hash code`() {
+        assertThat(SetMove(White, 1).hashCode()).isNotEqualTo(0)
+        assertThat(PushMove(White, 1, 2).hashCode()).isNotEqualTo(0)
+        assertThat(JumpMove(White, 1, 2).hashCode()).isNotEqualTo(0)
+    }
+
     @Nested
     inner class AddCaptureField {
         @Test
