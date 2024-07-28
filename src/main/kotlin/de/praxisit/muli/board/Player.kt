@@ -2,8 +2,13 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Phase.*
 
-class Player private constructor(val color: Color, val stones: Int, val stonesSet: Int, val phase: Phase) {
-
+class Player private constructor(
+    val color: Color,
+    val stones: Int,
+    val stonesSet: Int,
+    val phase: Phase,
+    val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy()
+) {
     val remainingStones: Int
         get() = 9 - stonesSet
 
@@ -66,6 +71,7 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
     }
 
     fun chooseMove(board: Board): Move {
-        return legalMoves(board).first()
+        val sortedMoves = legalMoves(board).sortedByDescending { move -> evaluationStrategy.evaluate(board, move) }
+        return sortedMoves.first()
     }
 }

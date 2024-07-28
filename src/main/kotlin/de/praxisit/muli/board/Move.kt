@@ -12,6 +12,9 @@ sealed class Move(val color: Color, val toField: Int, val capturedField: Int?) {
         if (capturedField != null && capturedField !in 0..<MAX_FIELDS)
             throw IllegalMoveException(this, "capturedField is out of range")
     }
+
+    val isCaptureMove: Boolean
+        get() = capturedField != null
 }
 
 private const val FIELD_INDEX_OUT_OF_RANGE = "field not in [0, 23]"

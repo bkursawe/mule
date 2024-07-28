@@ -51,6 +51,9 @@ class Board(
         return board.changePlayer()
     }
 
+    private val activePlayer: Player
+        get() = if (activePlayerColor == White) white else black
+
     private fun playerLooseStone() = if (activePlayerColor == White)
         copy(black = black.loseStone())
     else
@@ -60,8 +63,6 @@ class Board(
         copy(white = white.setStone())
     else
         copy(black = black.setStone())
-
-    private fun Color.player() = if (this == White) white else black
 
     internal fun changePlayer() = copy(activePlayer = activePlayerColor.opposite)
 
@@ -93,7 +94,7 @@ class Board(
 
     fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] == Empty }
 
-    fun chooseMove() = activePlayerColor.player().chooseMove(this)
+    fun chooseMove() = activePlayer.chooseMove(this)
 
     fun printBoard(): String {
         fun f(index: Int) = when (fields[index]) {
@@ -140,6 +141,7 @@ class Board(
         return checkMule(firstMule) || checkMule(secondMule)
     }
 
+    fun imcompleteMillCount(color: Color) = emptyFieldsIndices().count { field -> willCloseMule(field, color) }
 
     private val Int.field: Field
         get() = fields[this]
@@ -151,7 +153,13 @@ class Board(
     }
 
     fun noLooser() =
-        white.phase != LOOSE && black.phase != LOOSE && activePlayerColor.player().legalMoves(this).isNotEmpty()
+        white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
+
+    fun stonesOnBoard(color: Color) = fields.count { field -> field == color }
+
+    fun potentialMill(move: Move): Int =
+        MULES.filter { move.toField in it }
+            .count { muleFields -> !muleFields.map { fields[it] }.any { it == move.color.opposite } }
 
 
     companion object {
