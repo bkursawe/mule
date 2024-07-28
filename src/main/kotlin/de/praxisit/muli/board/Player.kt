@@ -7,19 +7,22 @@ class Player private constructor(
     val stones: Int,
     val stonesSet: Int,
     val phase: Phase,
-    val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy()
+    private val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy()
 ) {
     val remainingStones: Int
         get() = 9 - stonesSet
 
     constructor(color: Color) : this(color, 9, 0, SETTING)
 
-    fun copy(
+    constructor(color: Color, evaluationStrategy: EvaluationStrategy) : this(color, 9, 0, SETTING, evaluationStrategy)
+
+    private fun copy(
         color: Color = this.color,
         stones: Int = this.stones,
         stonesSet: Int = this.stonesSet,
-        phase: Phase = this.phase
-    ) = Player(color, stones, stonesSet, phase)
+        phase: Phase = this.phase,
+        evaluationStrategy: EvaluationStrategy = this.evaluationStrategy
+    ) = Player(color, stones, stonesSet, phase, evaluationStrategy)
 
     fun loseStone(): Player {
         return when {
@@ -33,7 +36,7 @@ class Player private constructor(
         check(stonesSet != 9)
         check(phase == SETTING)
 
-        return Player(color, stones, stonesSet + 1, if (stonesSet == 8) MOVING else SETTING)
+        return copy(stonesSet = stonesSet + 1, phase = if (stonesSet == 8) MOVING else SETTING)
     }
 
     fun legalMoves(board: Board): List<Move> {

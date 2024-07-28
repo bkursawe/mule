@@ -25,7 +25,7 @@ class Board(
     internal val activePlayerColor: Color = White
 ) {
 
-    private fun copy(
+    fun copy(
         fields: Array<Field> = this.fields,
         mules: Set<Int> = this.mules,
         white: Player = this.white,
@@ -48,10 +48,10 @@ class Board(
         }
 
         if (move.capturedField != null) board = board.playerLooseStone().removeStone(move.capturedField)
-        return board.changePlayer()
+        return board
     }
 
-    private val activePlayer: Player
+    val activePlayer: Player
         get() = if (activePlayerColor == White) white else black
 
     private fun playerLooseStone() = if (activePlayerColor == White)
@@ -64,7 +64,7 @@ class Board(
     else
         copy(black = black.setStone())
 
-    internal fun changePlayer() = copy(activePlayer = activePlayerColor.opposite)
+    internal fun switchPlayer() = copy(activePlayer = activePlayerColor.opposite)
 
     fun setStone(index: Int, color: Color): Board {
         val board = copy(fields = fields.copyOf())

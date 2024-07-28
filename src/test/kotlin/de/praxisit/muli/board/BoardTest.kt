@@ -22,6 +22,84 @@ class BoardTest {
     }
 
     @Nested
+    inner class Draw {
+        @Nested
+        inner class SetMove {
+            @Test
+            fun `draw a simple SetMove`() {
+                val board = Board()
+                val move = SetMove(White, 0)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+
+            @Test
+            fun `draw a SetMove with a capture`() {
+                val board = Board().setStone(0, White).setStone(1, White).setStone(4, Black)
+                val move = SetMove(White, 2, 4)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+        }
+
+        @Nested
+        inner class PushMove {
+            @Test
+            fun `draw a simple PushMove`() {
+                val board = Board().setStone(9, White).setStone(1, White)
+                val move = PushMove(White, 9, 0)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+
+            @Test
+            fun `draw a PushMove with a capture`() {
+                val board = Board().setStone(9, White).setStone(1, White).setStone(2, White).setStone(4, Black)
+                val move = PushMove(White, 9, 0, 4)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+        }
+
+        @Nested
+        inner class JumpMove {
+            @Test
+            fun `draw a simple PushMove`() {
+                val board = Board().setStone(22, White).setStone(1, White).setStone(3, White)
+                val move = JumpMove(White, 22, 0)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 3)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+
+            @Test
+            fun `draw a PushMove with a capture`() {
+                val board = Board().setStone(22, White).setStone(1, White).setStone(2, White).setStone(4, Black)
+                val move = JumpMove(White, 22, 0, 4)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+        }
+    }
+
+    @Nested
     inner class SetStone {
         @Test
         fun `set and get stones`() {
@@ -202,9 +280,9 @@ class BoardTest {
     @Test
     fun `board change player`() {
         assertThat(emptyBoard.activePlayerColor).isEqualTo(White)
-        val board1 = emptyBoard.changePlayer()
+        val board1 = emptyBoard.switchPlayer()
         assertThat(board1.activePlayerColor).isEqualTo(Black)
-        val board2 = board1.changePlayer()
+        val board2 = board1.switchPlayer()
         assertThat(board2.activePlayerColor).isEqualTo(White)
     }
 }

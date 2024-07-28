@@ -11,6 +11,7 @@ class Game() {
             print("${drawNumber++}: ")
             println(move)
             board = board.draw(move)
+            board.switchPlayer()
         }
         board.showWinner()
     }
