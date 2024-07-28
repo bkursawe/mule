@@ -42,7 +42,7 @@ class SetMove(color: Color, toField: Int, capturedField: Int? = null) : Move(col
 }
 
 @Suppress("LeakingThis")
-abstract class MoveWithFromField(color: Color, val fromField: Int, toField: Int, capturedField: Int? = null) :
+sealed class MoveWithFromField(color: Color, val fromField: Int, toField: Int, capturedField: Int? = null) :
     Move(color, toField, capturedField) {
     init {
         if (fromField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "fromField is out of range")

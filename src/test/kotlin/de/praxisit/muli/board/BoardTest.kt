@@ -37,7 +37,7 @@ class BoardTest {
             }
 
             @Test
-            fun `draw a SetMove with a capture`() {
+            fun `draw a SetMove with a black capture`() {
                 val board = Board().setStone(0, White).setStone(1, White).setStone(4, Black)
                 val move = SetMove(White, 2, 4)
 
@@ -45,6 +45,17 @@ class BoardTest {
 
                 assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
+            }
+
+            @Test
+            fun `draw a SetMove with a white capture`() {
+                val board = Board().setStone(0, White).setStone(1, Black).setStone(4, Black).switchPlayer()
+                val move = SetMove(Black, 7, 0)
+
+                val boardAfter = board.draw(move)
+
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).isEmpty()
+                assertThat(boardAfter.fieldsIndicesWithColor(Black)).containsExactlyInAnyOrder(1, 4, 7)
             }
         }
 
@@ -219,6 +230,61 @@ class BoardTest {
 
             assertThat(board.capturablePieces(White)).containsExactlyInAnyOrder(1, 2)
             assertThat(board.capturablePieces(Black)).containsExactlyInAnyOrder(6)
+        }
+    }
+
+    @Nested
+    inner class ChooseMove {
+        inner class TestEvaluationStrategy() : EvaluationStrategy {
+            override fun evaluate(board: Board, move: Move): Double {
+                return if (move.toField == 10) 10.0
+                else 0.0
+            }
+        }
+
+        @Test
+        fun `choose the player's move`() {
+            val player = Player(White, evaluationStrategy = TestEvaluationStrategy())
+            val board = Board(white = player)
+
+            val move = board.chooseMove()
+
+            assertThat(move.toField).isEqualTo(10)
+        }
+    }
+
+    @Nested
+    inner class NoLooser {
+        @Test
+        fun `no current looser`() {
+            val board = Board()
+            assertThat(board.noLooser()).isTrue()
+            assertThat(board.showWinner()).isEqualTo("No winner yet")
+        }
+
+        @Test
+        fun `white has no moves`() {
+            val white = Player(White, 4, 9, Phase.MOVING)
+            val black = Player(Black, 4, 9, Phase.MOVING)
+            val board = Board(white = white, black = black).setStone(0, White).setStone(1, White).setStone(2, White)
+                .setStone(9, White)
+                .setStone(4, Black).setStone(10, Black).setStone(14, Black).setStone(21, Black)
+
+            assertThat(board.noLooser()).isFalse()
+            assertThat(board.showWinner()).isEqualTo("Black is the winner")
+        }
+
+        @Test
+        fun `black has no moves`() {
+            val white = Player(White, 4, 9, Phase.MOVING)
+            val black = Player(Black, 4, 9, Phase.MOVING)
+            val board =
+                Board(white = white, black = black, activePlayerColor = Black).setStone(0, Black).setStone(1, Black)
+                    .setStone(2, Black).setStone(9, Black)
+                    .setStone(4, White).setStone(10, White).setStone(14, White).setStone(21, White)
+
+            assertThat(board.noLooser()).isFalse()
+            assertThat(board.showWinner()).isEqualTo("White is the winner")
         }
     }
 

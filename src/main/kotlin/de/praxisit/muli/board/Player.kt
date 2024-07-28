@@ -2,7 +2,7 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Phase.*
 
-class Player private constructor(
+class Player internal constructor(
     val color: Color,
     val stones: Int,
     val stonesSet: Int,

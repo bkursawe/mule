@@ -12,7 +12,7 @@ class Game() {
             println(move)
             board = board.draw(move).switchPlayer()
         }
-        board.showWinner()
+        println(board.showWinner())
     }
 }
 

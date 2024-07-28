@@ -30,8 +30,8 @@ class Board(
         mules: Set<Int> = this.mules,
         white: Player = this.white,
         black: Player = this.black,
-        activePlayer: Color = this.activePlayerColor
-    ) = Board(fields, mules, white, black, activePlayer)
+        activePlayerColor: Color = this.activePlayerColor
+    ) = Board(fields, mules, white, black, activePlayerColor)
 
     fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
     fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index }.toSet()
@@ -44,7 +44,6 @@ class Board(
             is SetMove  -> board.setStone(move.toField, move.color)
             is PushMove -> board.moveStone(move.fromField, move.toField)
             is JumpMove -> board.moveStone(move.fromField, move.toField)
-            else -> error("no further move class")
         }
 
         if (move.capturedField != null) board = board.playerLooseStone().removeStone(move.capturedField)
@@ -64,7 +63,7 @@ class Board(
     else
         copy(black = black.setStone())
 
-    internal fun switchPlayer() = copy(activePlayer = activePlayerColor.opposite)
+    internal fun switchPlayer() = copy(activePlayerColor = activePlayerColor.opposite)
 
     fun setStone(index: Int, color: Color): Board {
         val board = copy(fields = fields.copyOf())
@@ -146,11 +145,10 @@ class Board(
     private val Int.field: Field
         get() = fields[this]
 
-    fun showWinner() {
-        if (white.phase == LOOSE || white.legalMoves(this).isEmpty()) println("Black is the winner")
-        else if (black.phase == LOOSE || black.legalMoves(this).isEmpty()) println("White is the winner")
-        else println("No winner yet")
-    }
+    fun showWinner() =
+        if (white.phase == LOOSE || white.legalMoves(this).isEmpty()) "Black is the winner"
+        else if (black.phase == LOOSE || black.legalMoves(this).isEmpty()) "White is the winner"
+        else "No winner yet"
 
     fun noLooser() =
         white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
