@@ -38,12 +38,19 @@ class SetMove(color: Color, toField: Int, capturedField: Int? = null) : Move(col
     override fun hashCode() = color.hashCode() + toField.hashCode() + capturedField.hashCode()
 }
 
-class PushMove(color: Color, val fromField: Int, toField: Int, capturedField: Int? = null) :
+@Suppress("LeakingThis")
+abstract class MoveWithFromField(color: Color, val fromField: Int, toField: Int, capturedField: Int? = null) :
     Move(color, toField, capturedField) {
     init {
         if (fromField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "fromField is out of range")
         if (fromField == toField || toField == capturedField || fromField == capturedField)
             throw IllegalMoveException(this, "duplicate fields")
+    }
+}
+
+class PushMove(color: Color, fromField: Int, toField: Int, capturedField: Int? = null) :
+    MoveWithFromField(color, fromField, toField, capturedField) {
+    init {
         if (toField !in CONNECTIONS[fromField]) {
             throw IllegalMoveException(this, "toField is not connected to fromField")
         }
@@ -65,14 +72,8 @@ class PushMove(color: Color, val fromField: Int, toField: Int, capturedField: In
     override fun hashCode() = color.hashCode() + toField.hashCode() + capturedField.hashCode()
 }
 
-class JumpMove(color: Color, val fromField: Int, toField: Int, capturedField: Int? = null) :
-    Move(color, toField, capturedField) {
-    init {
-        if (fromField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "fromField is out of range")
-        if (fromField == toField || toField == capturedField || fromField == capturedField)
-            throw IllegalMoveException(this, "duplicate fields")
-    }
-
+class JumpMove(color: Color, fromField: Int, toField: Int, capturedField: Int? = null) :
+    MoveWithFromField(color, fromField, toField, capturedField) {
     override fun addCaptureField(field: Int): JumpMove {
         if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, FIELD_INDEX_OUT_OF_RANGE)
         if (field == fromField) throw IllegalMoveException(this, "field == fromField")

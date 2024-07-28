@@ -44,9 +44,10 @@ class Board(
             is SetMove  -> board.setStone(move.toField, move.color)
             is PushMove -> board.moveStone(move.fromField, move.toField)
             is JumpMove -> board.moveStone(move.fromField, move.toField)
+            else -> error("no further move class")
         }
 
-        if (move.capturedField != null) board = playerLooseStone().setStone(move.capturedField, Empty)
+        if (move.capturedField != null) board = board.playerLooseStone().removeStone(move.capturedField)
         return board.changePlayer()
     }
 
@@ -64,9 +65,15 @@ class Board(
 
     internal fun changePlayer() = copy(activePlayer = activePlayerColor.opposite)
 
-    fun setStone(index: Int, color: Field): Board {
+    fun setStone(index: Int, color: Color): Board {
         val board = copy(fields = fields.copyOf())
         board.fields[index] = color
+        return board
+    }
+
+    private fun removeStone(field: Int): Board {
+        val board = copy(fields = fields.copyOf())
+        board.fields[field] = Empty
         return board
     }
 
@@ -115,11 +122,24 @@ class Board(
         return fieldsIndicesWithColor(color).filter { !willCloseMule(it, color) }.toSet()
     }
 
-    fun willCloseMule(field: Int, color: Color) =
-        COMPLETABLE_MULES[field].first().first.field == color &&
-                COMPLETABLE_MULES[field].first().second.field == color ||
-                COMPLETABLE_MULES[field].last().first.field == color &&
-                COMPLETABLE_MULES[field].last().second.field == color
+    fun willCloseMule(field: Int, color: Color): Boolean {
+        val mules = COMPLETABLE_MULES[field]
+        val firstMule = mules.first()
+        val secondMule = mules.last()
+        return firstMule.first.field == color && firstMule.second.field == color ||
+                secondMule.first.field == color && secondMule.second.field == color
+    }
+
+    fun willCloseMule(fromField: Int, toField: Int, color: Color): Boolean {
+        val mules = COMPLETABLE_MULES[toField]
+        val firstMule = mules.first()
+        val secondMule = mules.last()
+        fun checkMule(firstMule: Pair<Int, Int>) =
+            firstMule.first != fromField && firstMule.first.field == color &&
+                    firstMule.second != fromField && firstMule.second.field == color
+        return checkMule(firstMule) || checkMule(secondMule)
+    }
+
 
     private val Int.field: Field
         get() = fields[this]
