@@ -9,13 +9,18 @@ class Player private constructor(val color: Color, val stones: Int, val stonesSe
 
     constructor(color: Color) : this(color, 9, 0, SETTING)
 
+    fun copy(
+        color: Color = this.color,
+        stones: Int = this.stones,
+        stonesSet: Int = this.stonesSet,
+        phase: Phase = this.phase
+    ) = Player(color, stones, stonesSet, phase)
+
     fun loseStone(): Player {
-        return if (stones > 4) {
-            Player(color, stones - 1, stonesSet, phase)
-        } else if (stones == 4) {
-            Player(color, 3, stonesSet, JUMPING)
-        } else {
-            Player(color, 2, stonesSet, LOOSE)
+        return when {
+            stones > 4  -> copy(stones = stones - 1)
+            stones == 4 -> copy(stones = 3, phase = JUMPING)
+            else        -> copy(stones = 2, phase = LOOSE)
         }
     }
 

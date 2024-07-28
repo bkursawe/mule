@@ -2,8 +2,6 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Board.Companion.COMPLETABLE_MULES
 import de.praxisit.muli.board.Board.Companion.MULES
-import de.praxisit.muli.board.Color.BLACK
-import de.praxisit.muli.board.Color.WHITE
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -28,13 +26,13 @@ class BoardTest {
         @Test
         fun `set and get stones`() {
             val board = emptyBoard
-                .setStone(5, WHITE)
-                .setStone(8, BLACK)
+                .setStone(5, White)
+                .setStone(8, Black)
 
-            assertThat(board.getStone(5)).isEqualTo(WHITE)
-            assertThat(board.getStone(8)).isEqualTo(BLACK)
-            assertThat(board.fieldsIndicesWithColor(WHITE)).containsExactly(5)
-            assertThat(board.fieldsIndicesWithColor(BLACK)).containsExactly(8)
+            assertThat(board.getStone(5)).isEqualTo(White)
+            assertThat(board.getStone(8)).isEqualTo(Black)
+            assertThat(board.fieldsIndicesWithColor(White)).containsExactly(5)
+            assertThat(board.fieldsIndicesWithColor(Black)).containsExactly(8)
         }
 
         @Test
@@ -42,11 +40,11 @@ class BoardTest {
             assertThatThrownBy {
                 emptyBoard.setStone(
                     24,
-                    WHITE
+                    White
                 )
             }.isInstanceOf(ArrayIndexOutOfBoundsException::class.java)
             assertThatThrownBy {
-                emptyBoard.setStone(24, WHITE)
+                emptyBoard.setStone(24, White)
             }.isInstanceOf(ArrayIndexOutOfBoundsException::class.java)
         }
 
@@ -61,19 +59,19 @@ class BoardTest {
     inner class MoveStone {
         @Test
         fun `from used field to empty field`() {
-            val board = emptyBoard.setStone(10, WHITE)
+            val board = emptyBoard.setStone(10, White)
 
             val endBoard = board.moveStone(10, 11)
 
-            assertThat(endBoard.getStone(10)).isEqualTo(Color.NONE)
-            assertThat(endBoard.getStone(11)).isEqualTo(WHITE)
+            assertThat(endBoard.getStone(10)).isEqualTo(Empty)
+            assertThat(endBoard.getStone(11)).isEqualTo(White)
         }
 
         @Test
         fun `from used field to another used field`() {
             val board = emptyBoard
-                .setStone(10, WHITE)
-                .setStone(9, BLACK)
+                .setStone(10, White)
+                .setStone(9, Black)
 
             assertThatThrownBy { board.moveStone(10, 9) }.isInstanceOf(IllegalArgumentException::class.java)
         }
@@ -85,18 +83,18 @@ class BoardTest {
 
         @Test
         fun `from used field to the same field`() {
-            val board = emptyBoard.setStone(15, BLACK)
+            val board = emptyBoard.setStone(15, Black)
 
             assertThatThrownBy { board.moveStone(15, 15) }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
-    
+
     @Nested
     inner class CompletableMules {
         @Test
         fun `every field is in 2 mules`() {
             assertThat(MULES).hasSize(MULES.size)
-            (0..<24).forEach {field ->
+            (0..<24).forEach { field ->
                 assertThat(COMPLETABLE_MULES[field]).allSatisfy { muleFieldPair ->
                     assertThat(listOf(muleFieldPair.first, muleFieldPair.second)).doesNotContain(field)
                 }
@@ -116,10 +114,10 @@ class BoardTest {
             ]
         )
         fun `will close mule`(field: Int, expected: Boolean) {
-            val board = emptyBoard.setStone(1, WHITE).setStone(2, WHITE)
-                .setStone(4, BLACK).setStone(5, BLACK)
+            val board = emptyBoard.setStone(1, White).setStone(2, White)
+                .setStone(4, Black).setStone(5, Black)
 
-            assertThat(board.willCloseMule(field, WHITE))
+            assertThat(board.willCloseMule(field, White))
         }
     }
 
@@ -127,27 +125,27 @@ class BoardTest {
     inner class CapturablePieces {
         @Test
         fun `no capturable pieces in empty board`() {
-            assertThat(emptyBoard.capturablePieces(WHITE)).isEmpty()
-            assertThat(emptyBoard.capturablePieces(BLACK)).isEmpty()
+            assertThat(emptyBoard.capturablePieces(White)).isEmpty()
+            assertThat(emptyBoard.capturablePieces(Black)).isEmpty()
         }
 
         @Test
         fun `find capturable pieces in complex board`() {
             val board = emptyBoard
-            .setStone(1, WHITE)
-                .setStone(2, WHITE)
-                .setStone(3, BLACK)
-                .setStone(4, BLACK)
-                .setStone(5, BLACK)
-                .setStone(6, BLACK)
+                .setStone(1, White)
+                .setStone(2, White)
+                .setStone(3, Black)
+                .setStone(4, Black)
+                .setStone(5, Black)
+                .setStone(6, Black)
 
-            assertThat(board.capturablePieces(WHITE)).containsExactlyInAnyOrder(1, 2)
-            assertThat(board.capturablePieces(BLACK)).containsExactlyInAnyOrder(6)
+            assertThat(board.capturablePieces(White)).containsExactlyInAnyOrder(1, 2)
+            assertThat(board.capturablePieces(Black)).containsExactlyInAnyOrder(6)
         }
     }
 
     @Nested
-    inner class printBoard {
+    inner class PrintBoard {
         @Test
         fun `draw empty board`() {
             val output = emptyBoard.printBoard()
@@ -175,9 +173,9 @@ class BoardTest {
         @Test
         fun `draw board with some stones`() {
             val board = emptyBoard
-                .setStone(3, WHITE)
-                .setStone(4, WHITE)
-                .setStone(5, BLACK)
+                .setStone(3, White)
+                .setStone(4, White)
+                .setStone(5, Black)
             val output = board.printBoard()
             val expected = """
                 O--------O--------O
@@ -203,10 +201,10 @@ class BoardTest {
 
     @Test
     fun `board change player`() {
-        assertThat(emptyBoard.activePlayerColor).isEqualTo(WHITE)
+        assertThat(emptyBoard.activePlayerColor).isEqualTo(White)
         val board1 = emptyBoard.changePlayer()
-        assertThat(board1.activePlayerColor).isEqualTo(BLACK)
+        assertThat(board1.activePlayerColor).isEqualTo(Black)
         val board2 = board1.changePlayer()
-        assertThat(board2.activePlayerColor).isEqualTo(WHITE)
+        assertThat(board2.activePlayerColor).isEqualTo(White)
     }
 }

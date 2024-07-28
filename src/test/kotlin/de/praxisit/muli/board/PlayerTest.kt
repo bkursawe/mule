@@ -1,7 +1,5 @@
 package de.praxisit.muli.board
 
-import de.praxisit.muli.board.Color.BLACK
-import de.praxisit.muli.board.Color.WHITE
 import de.praxisit.muli.board.Phase.JUMPING
 import de.praxisit.muli.board.Phase.MOVING
 import org.assertj.core.api.Assertions.assertThat
@@ -16,17 +14,17 @@ class PlayerTest {
     inner class CreatePlayer {
         @Test
         fun `create white player`() {
-            val player = Player(WHITE)
+            val player = Player(White)
 
-            assertThat(player.color).isEqualTo(WHITE)
+            assertThat(player.color).isEqualTo(White)
             assertThat(player.stones).isEqualTo(9)
         }
 
         @Test
         fun `create black player`() {
-            val player = Player(BLACK)
+            val player = Player(Black)
 
-            assertThat(player.color).isEqualTo(BLACK)
+            assertThat(player.color).isEqualTo(Black)
             assertThat(player.stones).isEqualTo(9)
         }
     }
@@ -40,7 +38,7 @@ class PlayerTest {
         ]
     )
     fun `set some stones`(stones: Int, remainingStones: Int?, expected: Boolean) {
-        var player = Player(WHITE)
+        var player = Player(White)
         if (expected) {
             for (i in 0 until stones) {
                 player = player.setStone()
@@ -66,19 +64,19 @@ class PlayerTest {
         ]
     )
     fun `set stones changes phase`(numberOfStones: Int, numberOfLeftStones: Int, expectedPhase: Phase) {
-        var player = Player(WHITE)
+        var player = Player(White)
         for (i in 0 until numberOfStones) {
             player = player.setStone()
         }
 
-        assertThat(player.color).isEqualTo(WHITE)
+        assertThat(player.color).isEqualTo(White)
         assertThat(player.remainingStones).isEqualTo(numberOfLeftStones)
         assertThat(player.phase).isEqualTo(expectedPhase)
     }
 
     @Test
     fun `lose stones`() {
-        var player = Player(WHITE)
+        var player = Player(White)
         repeat(9) {
             player = player.setStone()
         }
@@ -96,38 +94,38 @@ class PlayerTest {
         inner class SettingMoves {
             @Test
             fun `setting on an empty board`() {
-                val player = Player(WHITE)
+                val player = Player(White)
                 val board = Board()
 
                 val moves = player.legalMoves(board)
 
                 assertThat(moves).hasSize(24)
                     .hasOnlyElementsOfType(SetMove::class.java)
-                    .extracting(Move::color).containsOnly(WHITE)
+                    .extracting(Move::color).containsOnly(White)
             }
 
             @Test
             fun `setting on a board with some stones of one color`() {
-                val player = Player(BLACK)
-                val board = Board().setStone(3, BLACK).setStone(4, BLACK).setStone(5, BLACK)
+                val player = Player(Black)
+                val board = Board().setStone(3, Black).setStone(4, Black).setStone(5, Black)
 
                 val moves = player.legalMoves(board)
 
                 assertThat(moves).hasSize(21)
                     .hasOnlyElementsOfType(SetMove::class.java)
-                    .extracting(Move::color).containsOnly(BLACK)
+                    .extracting(Move::color).containsOnly(Black)
             }
 
             @Test
             fun `setting on a board with some stones of different colors`() {
-                val player = Player(BLACK)
-                val board = Board().setStone(3, BLACK).setStone(4, WHITE).setStone(5, BLACK)
+                val player = Player(Black)
+                val board = Board().setStone(3, Black).setStone(4, White).setStone(5, Black)
 
                 val moves = player.legalMoves(board)
 
                 assertThat(moves).hasSize(21)
                     .hasOnlyElementsOfType(SetMove::class.java)
-                    .extracting(Move::color).containsOnly(BLACK)
+                    .extracting(Move::color).containsOnly(Black)
             }
         }
 
@@ -135,8 +133,8 @@ class PlayerTest {
         inner class JumpingMoves {
             @Test
             fun `a player with 3 stones on an otherwise empty board`() {
-                val white = Player(WHITE).loseStone().loseStone().loseStone().loseStone().loseStone().loseStone()
-                val board = Board().setStone(6, WHITE).setStone(7, WHITE).setStone(8, WHITE)
+                val white = Player(White).loseStone().loseStone().loseStone().loseStone().loseStone().loseStone()
+                val board = Board().setStone(6, White).setStone(7, White).setStone(8, White)
 
                 val moves = white.legalMoves(board)
 
@@ -144,14 +142,14 @@ class PlayerTest {
                     .hasSize(63)
                     .hasOnlyElementsOfType(JumpMove::class.java)
                     .extracting(Move::color)
-                    .containsOnly(WHITE)
+                    .containsOnly(White)
             }
 
             @Test
             fun `a player with 3 stones on a board with other stones`() {
-                val white = Player(WHITE).loseStone().loseStone().loseStone().loseStone().loseStone().loseStone()
-                val board = Board().setStone(6, WHITE).setStone(7, WHITE).setStone(8, WHITE)
-                    .setStone(21, BLACK).setStone(22, BLACK).setStone(23, BLACK)
+                val white = Player(White).loseStone().loseStone().loseStone().loseStone().loseStone().loseStone()
+                val board = Board().setStone(6, White).setStone(7, White).setStone(8, White)
+                    .setStone(21, Black).setStone(22, Black).setStone(23, Black)
 
                 val moves = white.legalMoves(board)
 
@@ -159,7 +157,7 @@ class PlayerTest {
                     .hasSize(54)
                     .hasOnlyElementsOfType(JumpMove::class.java)
                     .extracting(Move::color)
-                    .containsOnly(WHITE)
+                    .containsOnly(White)
             }
         }
     }

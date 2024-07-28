@@ -1,14 +1,18 @@
 package de.praxisit.muli.board
 
-enum class Color {
-    NONE,
-    WHITE,
-    BLACK;
+sealed class Field
 
-    val opposite: Color
-        get() = when (this) {
-            WHITE -> BLACK
-            BLACK -> WHITE
-            NONE  -> NONE
-        }
+data object Empty : Field()
+
+sealed class Color : Field() {
+    abstract val opposite: Color
 }
+
+data object White : Color() {
+    override val opposite: Color = Black
+}
+
+data object Black : Color() {
+    override val opposite: Color = White
+}
+

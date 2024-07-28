@@ -1,6 +1,5 @@
 package de.praxisit.muli.board
 
-import de.praxisit.muli.board.Color.*
 import de.praxisit.muli.board.Phase.LOOSE
 
 //
@@ -19,15 +18,15 @@ import de.praxisit.muli.board.Phase.LOOSE
 //  21-------22-------23
 //
 class Board(
-    private val fields: Array<Color> = Array(24) { _ -> NONE },
+    private val fields: Array<Field> = Array(24) { _ -> Empty },
     private val mules: Set<Int> = emptySet(),
-    private val white: Player = Player(WHITE),
-    private val black: Player = Player(BLACK),
-    internal val activePlayerColor: Color = WHITE
+    private val white: Player = Player(White),
+    private val black: Player = Player(Black),
+    internal val activePlayerColor: Color = White
 ) {
 
     private fun copy(
-        fields: Array<Color> = this.fields,
+        fields: Array<Field> = this.fields,
         mules: Set<Int> = this.mules,
         white: Player = this.white,
         black: Player = this.black,
@@ -35,7 +34,7 @@ class Board(
     ) = Board(fields, mules, white, black, activePlayer)
 
     fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
-    fun emptyFieldsIndices() = fieldsIndicesWithColor(NONE)
+    fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index }.toSet()
 
     fun draw(move: Move): Board {
         var board = this
@@ -47,55 +46,53 @@ class Board(
             is JumpMove -> board.moveStone(move.fromField, move.toField)
         }
 
-        if (move.capturedField != null) board = playerLooseStone().setStone(move.capturedField, NONE)
+        if (move.capturedField != null) board = playerLooseStone().setStone(move.capturedField, Empty)
         return board.changePlayer()
     }
 
-    private fun playerLooseStone() = if (activePlayerColor == WHITE)
+    private fun playerLooseStone() = if (activePlayerColor == White)
         copy(black = black.loseStone())
     else
         copy(white = white.loseStone())
 
-    private fun playerSetStone() = if (activePlayerColor == WHITE)
+    private fun playerSetStone() = if (activePlayerColor == White)
         copy(white = white.setStone())
     else
         copy(black = black.setStone())
 
-    private fun Color.opposite() = if (this == WHITE) BLACK else WHITE
+    private fun Color.player() = if (this == White) white else black
 
-    private fun Color.player() = if (this == WHITE) white else black
+    internal fun changePlayer() = copy(activePlayer = activePlayerColor.opposite)
 
-    internal fun changePlayer() = copy(activePlayer = activePlayerColor.opposite())
-
-    fun setStone(index: Int, color: Color): Board {
+    fun setStone(index: Int, color: Field): Board {
         val board = copy(fields = fields.copyOf())
         board.fields[index] = color
         return board
     }
 
-    fun getStone(index: Int): Color {
+    fun getStone(index: Int): Field {
         return fields[index]
     }
 
     fun moveStone(fromIndex: Int, toIndex: Int): Board {
-        require(fields[fromIndex] != NONE)
-        require(fields[toIndex] == NONE)
+        require(fields[fromIndex] != Empty)
+        require(fields[toIndex] == Empty)
 
         val board = copy(fields = fields.copyOf())
         board.fields[toIndex] = fields[fromIndex]
-        board.fields[fromIndex] = NONE
+        board.fields[fromIndex] = Empty
         return board
     }
 
-    fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] == NONE }
+    fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] == Empty }
 
     fun chooseMove() = activePlayerColor.player().chooseMove(this)
 
     fun printBoard(): String {
         fun f(index: Int) = when (fields[index]) {
-            NONE  -> "O"
-            WHITE -> "W"
-            BLACK -> "B"
+            Empty -> "O"
+            White -> "W"
+            Black -> "B"
         }
         return """
              ${f(0)}--------${f(1)}--------${f(2)}
@@ -119,12 +116,12 @@ class Board(
     }
 
     fun willCloseMule(field: Int, color: Color) =
-        COMPLETABLE_MULES[field].first().first.color == color &&
-                COMPLETABLE_MULES[field].first().second.color == color ||
-                COMPLETABLE_MULES[field].last().first.color == color &&
-                COMPLETABLE_MULES[field].last().second.color == color
+        COMPLETABLE_MULES[field].first().first.field == color &&
+                COMPLETABLE_MULES[field].first().second.field == color ||
+                COMPLETABLE_MULES[field].last().first.field == color &&
+                COMPLETABLE_MULES[field].last().second.field == color
 
-    private val Int.color: Color
+    private val Int.field: Field
         get() = fields[this]
 
     fun showWinner() {

@@ -2,19 +2,20 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Board.Companion.CONNECTIONS
 import de.praxisit.muli.board.Board.Companion.MAX_FIELDS
-import de.praxisit.muli.board.Color.NONE
 
 @Suppress("LeakingThis", "kotlin:S1192")
 sealed class Move(val color: Color, val toField: Int, val capturedField: Int?) {
     abstract fun addCaptureField(field: Int): Move
 
     init {
-        if (color == NONE) throw IllegalMoveException(this, "color is NONE")
         if (toField !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "toField is out of range")
         if (capturedField != null && capturedField !in 0..<MAX_FIELDS)
             throw IllegalMoveException(this, "capturedField is out of range")
     }
 }
+
+private const val FIELD_INDEX_OUT_OF_RANGE = "field not in [0, 23]"
+private const val CAPTURE_FIELD_EQUAL_TO_FIELD = "field == toField"
 
 class SetMove(color: Color, toField: Int, capturedField: Int? = null) : Move(color, toField, capturedField) {
     init {
@@ -23,8 +24,8 @@ class SetMove(color: Color, toField: Int, capturedField: Int? = null) : Move(col
     }
 
     override fun addCaptureField(field: Int): SetMove {
-        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "field not in [0, 23]")
-        if (field == toField) throw IllegalMoveException(this, "field == toField")
+        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, FIELD_INDEX_OUT_OF_RANGE)
+        if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
         return SetMove(color, toField, field)
     }
 
@@ -49,9 +50,9 @@ class PushMove(color: Color, val fromField: Int, toField: Int, capturedField: In
     }
 
     override fun addCaptureField(field: Int): PushMove {
-        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "field not in [0, 23]")
+        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, FIELD_INDEX_OUT_OF_RANGE)
         if (field == fromField) throw IllegalMoveException(this, "field == fromField")
-        if (field == toField) throw IllegalMoveException(this, "field == toField")
+        if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
         return PushMove(color, fromField, toField, field)
     }
 
@@ -73,9 +74,9 @@ class JumpMove(color: Color, val fromField: Int, toField: Int, capturedField: In
     }
 
     override fun addCaptureField(field: Int): JumpMove {
-        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, "field not in [0, 23]")
+        if (field !in 0..<MAX_FIELDS) throw IllegalMoveException(this, FIELD_INDEX_OUT_OF_RANGE)
         if (field == fromField) throw IllegalMoveException(this, "field == fromField")
-        if (field == toField) throw IllegalMoveException(this, "field == toField")
+        if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
         return JumpMove(color, fromField, toField, field)
     }
 
