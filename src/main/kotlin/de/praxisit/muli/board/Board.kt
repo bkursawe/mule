@@ -19,7 +19,6 @@ import de.praxisit.muli.board.Phase.LOOSE
 //
 class Board(
     private val fields: Array<Field> = Array(24) { _ -> Empty },
-    private val mules: Set<Int> = emptySet(),
     private val white: Player = Player(White),
     private val black: Player = Player(Black),
     internal val activePlayerColor: Color = White
@@ -27,11 +26,10 @@ class Board(
 
     fun copy(
         fields: Array<Field> = this.fields,
-        mules: Set<Int> = this.mules,
         white: Player = this.white,
         black: Player = this.black,
         activePlayerColor: Color = this.activePlayerColor
-    ) = Board(fields, mules, white, black, activePlayerColor)
+    ) = Board(fields, white, black, activePlayerColor)
 
     fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
     fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index }.toSet()
