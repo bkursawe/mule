@@ -235,7 +235,7 @@ class BoardTest {
 
     @Nested
     inner class ChooseMove {
-        inner class TestEvaluationStrategy() : EvaluationStrategy {
+        inner class TestEvaluationStrategy : EvaluationStrategy {
             override fun evaluate(board: Board, move: Move): Double {
                 return if (move.toField == 10) 10.0
                 else 0.0
@@ -249,7 +249,7 @@ class BoardTest {
 
             val move = board.chooseMove()
 
-            assertThat(move.toField).isEqualTo(10)
+            assertThat(move!!.toField).isEqualTo(10)
         }
     }
 

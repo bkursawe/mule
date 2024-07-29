@@ -22,15 +22,19 @@ class Game() {
             } else {
                 board.chooseMove()
             }
-            print("${drawNumber++}: ")
-            println(move)
-            board = board.draw(move).switchPlayer()
+            if (move != null) {
+                print("${drawNumber++}: ")
+                println(move)
+                board = board.draw(move).switchPlayer()
+            }
         }
         println(board.showWinner())
     }
 
-    private fun chooseMove(board: Board): Move {
+    private fun chooseMove(board: Board): Move? {
         val moves = board.activePlayer.legalMoves(board)
+        if (moves.isEmpty()) return null
+
         moves.mapIndexed { index, move -> "$index: $move" }.forEach { println(it) }
         println("Choose a move by number: ")
         var answer = readln()

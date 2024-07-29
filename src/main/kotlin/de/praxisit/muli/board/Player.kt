@@ -7,22 +7,40 @@ class Player internal constructor(
     val stones: Int,
     val stonesSet: Int,
     val phase: Phase,
-    private val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy()
-) {
+    private val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy(),
+    private val choosingStrategy: ChoosingStrategy = SimpleChoosingStrategy()
+) : EvaluationStrategy by evaluationStrategy, ChoosingStrategy by choosingStrategy {
     val remainingStones: Int
         get() = 9 - stonesSet
 
     constructor(color: Color) : this(color, 9, 0, SETTING)
 
-    constructor(color: Color, evaluationStrategy: EvaluationStrategy) : this(color, 9, 0, SETTING, evaluationStrategy)
+    constructor(color: Color, evaluationStrategy: EvaluationStrategy) : this(
+        color,
+        9,
+        0,
+        SETTING,
+        evaluationStrategy,
+        SimpleChoosingStrategy()
+    )
+
+    constructor(color: Color, choosingStrategy: ChoosingStrategy) : this(
+        color,
+        9,
+        0,
+        SETTING,
+        SimpleEvaluationStrategy(),
+        choosingStrategy
+    )
 
     private fun copy(
         color: Color = this.color,
         stones: Int = this.stones,
         stonesSet: Int = this.stonesSet,
         phase: Phase = this.phase,
-        evaluationStrategy: EvaluationStrategy = this.evaluationStrategy
-    ) = Player(color, stones, stonesSet, phase, evaluationStrategy)
+        evaluationStrategy: EvaluationStrategy = this.evaluationStrategy,
+        choosingStrategy: ChoosingStrategy = this.choosingStrategy
+    ) = Player(color, stones, stonesSet, phase, evaluationStrategy, choosingStrategy)
 
     fun loseStone(): Player {
         return when {
@@ -73,8 +91,4 @@ class Player internal constructor(
         board.emptyFieldsIndices().map { emptyField -> JumpMove(color, fromField, emptyField) }
     }
 
-    fun chooseMove(board: Board): Move {
-        val sortedMoves = legalMoves(board).sortedByDescending { move -> evaluationStrategy.evaluate(board, move) }
-        return sortedMoves.first()
-    }
 }
