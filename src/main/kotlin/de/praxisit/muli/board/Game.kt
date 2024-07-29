@@ -7,7 +7,7 @@ fun main() {
     Game().start()
 }
 
-class Game() {
+class Game {
     private var board = Board()
     private var drawNumber = 0
 
@@ -45,12 +45,12 @@ class Game() {
         return moves[answer.toInt()]
     }
 
-    fun askColor(): Color {
+    private fun askColor(): Color {
         print("Do you want to play with (W)hite or (B)lack? ")
         val colorInput = readln()
-        when (colorInput.lowercase(Locale.getDefault())) {
-            "w", "white" -> return White
-            "b", "black" -> return Black
+        return when (colorInput.lowercase(Locale.getDefault())) {
+            "w", "white" -> White
+            "b", "black" -> Black
             else         -> throw IllegalArgumentException("Invalid color input")
         }
     }
