@@ -2,6 +2,7 @@ package de.praxisit.muli.board
 
 import de.praxisit.muli.board.Board.Companion.COMPLETABLE_MULES
 import de.praxisit.muli.board.Board.Companion.MULES
+import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -28,34 +29,34 @@ class BoardTest {
             @Test
             fun `draw a simple SetMove`() {
                 val board = Board()
-                val move = SetMove(White, 0)
+                val move = SetMove(White, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0)
+                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0.asFieldIndex)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
             }
 
             @Test
             fun `draw a SetMove with a black capture`() {
                 val board = Board().setStone(0, White).setStone(1, White).setStone(4, Black)
-                val move = SetMove(White, 2, 4)
+                val move = SetMove(White, 2.asFieldIndex, 4.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
+                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 2)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
             }
 
             @Test
             fun `draw a SetMove with a white capture`() {
                 val board = Board().setStone(0, White).setStone(1, Black).setStone(4, Black).switchPlayer()
-                val move = SetMove(Black, 7, 0)
+                val move = SetMove(Black, 7.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
                 assertThat(boardAfter.fieldsIndicesWithColor(White)).isEmpty()
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).containsExactlyInAnyOrder(1, 4, 7)
+                assertThat(boardAfter.fieldsIndicesWithColor(Black).map { it.index }).containsExactlyInAnyOrder(1, 4, 7)
             }
         }
 
@@ -64,22 +65,22 @@ class BoardTest {
             @Test
             fun `draw a simple PushMove`() {
                 val board = Board().setStone(9, White).setStone(1, White)
-                val move = PushMove(White, 9, 0)
+                val move = PushMove(White, 9.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1)
+                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
             }
 
             @Test
             fun `draw a PushMove with a capture`() {
                 val board = Board().setStone(9, White).setStone(1, White).setStone(2, White).setStone(4, Black)
-                val move = PushMove(White, 9, 0, 4)
+                val move = PushMove(White, 9.asFieldIndex, 0.asFieldIndex, 4.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
+                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 2)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
             }
         }
@@ -89,22 +90,22 @@ class BoardTest {
             @Test
             fun `draw a simple PushMove`() {
                 val board = Board().setStone(22, White).setStone(1, White).setStone(3, White)
-                val move = JumpMove(White, 22, 0)
+                val move = JumpMove(White, 22.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 3)
+                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 3)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
             }
 
             @Test
             fun `draw a PushMove with a capture`() {
                 val board = Board().setStone(22, White).setStone(1, White).setStone(2, White).setStone(4, Black)
-                val move = JumpMove(White, 22, 0, 4)
+                val move = JumpMove(White, 22.asFieldIndex, 0.asFieldIndex, 4.asFieldIndex)
 
                 val boardAfter = board.draw(move)
 
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0, 1, 2)
+                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 2)
                 assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
             }
         }
@@ -120,8 +121,8 @@ class BoardTest {
 
             assertThat(board.getStone(5)).isEqualTo(White)
             assertThat(board.getStone(8)).isEqualTo(Black)
-            assertThat(board.fieldsIndicesWithColor(White)).containsExactly(5)
-            assertThat(board.fieldsIndicesWithColor(Black)).containsExactly(8)
+            assertThat(board.fieldsIndicesWithColor(White).map { it.index }).containsExactly(5)
+            assertThat(board.fieldsIndicesWithColor(Black).map { it.index }).containsExactly(8)
         }
 
         @Test
@@ -183,8 +184,8 @@ class BoardTest {
         @Test
         fun `every field is in 2 mules`() {
             assertThat(MULES).hasSize(MULES.size)
-            (0..<24).forEach { field ->
-                assertThat(COMPLETABLE_MULES[field]).allSatisfy { muleFieldPair ->
+            FieldIndex.INDEXES.forEach { field ->
+                assertThat(COMPLETABLE_MULES[field.index]).allSatisfy { muleFieldPair ->
                     assertThat(listOf(muleFieldPair.first, muleFieldPair.second)).doesNotContain(field)
                 }
             }
@@ -202,7 +203,7 @@ class BoardTest {
                 "22,false"
             ]
         )
-        fun `will close mule`(field: Int, expected: Boolean) {
+        fun `will close mule`(field: FieldIndex, expected: Boolean) {
             val board = emptyBoard.setStone(1, White).setStone(2, White)
                 .setStone(4, Black).setStone(5, Black)
 
@@ -228,8 +229,8 @@ class BoardTest {
                 .setStone(5, Black)
                 .setStone(6, Black)
 
-            assertThat(board.capturablePieces(White)).containsExactlyInAnyOrder(1, 2)
-            assertThat(board.capturablePieces(Black)).containsExactlyInAnyOrder(6)
+            assertThat(board.capturablePieces(White).map { it.index }).containsExactlyInAnyOrder(1, 2)
+            assertThat(board.capturablePieces(Black).map { it.index }).containsExactlyInAnyOrder(6)
         }
     }
 
@@ -237,7 +238,7 @@ class BoardTest {
     inner class ChooseMove {
         inner class TestEvaluationStrategy : EvaluationStrategy {
             override fun evaluate(board: Board, move: Move): Double {
-                return if (move.toField == 10) 10.0
+                return if (move.toField.index == 10) 10.0
                 else 0.0
             }
         }
@@ -351,4 +352,8 @@ class BoardTest {
         val board2 = board1.switchPlayer()
         assertThat(board2.activePlayerColor).isEqualTo(White)
     }
+
+    private fun Board.setStone(field: Int, color: Color) = setStone(field.asFieldIndex, color)
+    private fun Board.getStone(field: Int) = getStone(field.asFieldIndex)
+    private fun Board.moveStone(from: Int, to: Int) = moveStone(from.asFieldIndex, to.asFieldIndex)
 }

@@ -1,5 +1,6 @@
 package de.praxisit.muli.board
 
+import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
 import de.praxisit.muli.board.Phase.LOOSE
 
 //
@@ -31,8 +32,10 @@ class Board(
         activePlayerColor: Color = this.activePlayerColor
     ) = Board(fields, white, black, activePlayerColor)
 
-    fun fieldsIndicesWithColor(color: Color) = fields.withIndex().filter { it.value == color }.map { it.index }.toSet()
-    fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index }.toSet()
+    fun fieldsIndicesWithColor(color: Color) =
+        fields.withIndex().filter { it.value == color }.map { it.index.asFieldIndex }.toSet()
+
+    fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index.asFieldIndex }.toSet()
 
     fun draw(move: Move): Board {
         var board = this
@@ -63,33 +66,33 @@ class Board(
 
     internal fun switchPlayer() = copy(activePlayerColor = activePlayerColor.opposite)
 
-    fun setStone(index: Int, color: Color): Board {
+    fun setStone(index: FieldIndex, color: Color): Board {
         val board = copy(fields = fields.copyOf())
-        board.fields[index] = color
+        board.fields[index.index] = color
         return board
     }
 
-    private fun removeStone(field: Int): Board {
+    private fun removeStone(field: FieldIndex): Board {
         val board = copy(fields = fields.copyOf())
-        board.fields[field] = Empty
+        board.fields[field.index] = Empty
         return board
     }
 
-    fun getStone(index: Int): Field {
-        return fields[index]
+    fun getStone(field: FieldIndex): Field {
+        return fields[field.index]
     }
 
-    fun moveStone(fromIndex: Int, toIndex: Int): Board {
-        require(fields[fromIndex] != Empty)
-        require(fields[toIndex] == Empty)
+    fun moveStone(fromIndex: FieldIndex, toIndex: FieldIndex): Board {
+        require(fields[fromIndex.index] != Empty)
+        require(fields[toIndex.index] == Empty)
 
         val board = copy(fields = fields.copyOf())
-        board.fields[toIndex] = fields[fromIndex]
-        board.fields[fromIndex] = Empty
+        board.fields[toIndex.index] = fields[fromIndex.index]
+        board.fields[fromIndex.index] = Empty
         return board
     }
 
-    fun connectedEmptyFields(index: Int) = CONNECTIONS[index].filter { fields[it] == Empty }
+    fun connectedEmptyFields(field: FieldIndex) = CONNECTIONS[field.index].filter { fields[it.index] == Empty }
 
     fun chooseMove() = activePlayer.chooseMove(this)
 
@@ -116,31 +119,29 @@ class Board(
         """.trimIndent()
     }
 
-    fun capturablePieces(color: Color): Set<Int> {
-        return fieldsIndicesWithColor(color).filter { !willCloseMule(it, color) }.toSet()
-    }
+    fun capturablePieces(color: Color) = fieldsIndicesWithColor(color).filter { !willCloseMule(it, color) }.toSet()
 
-    fun willCloseMule(field: Int, color: Color): Boolean {
-        val mules = COMPLETABLE_MULES[field]
+    fun willCloseMule(field: FieldIndex, color: Color): Boolean {
+        val mules = COMPLETABLE_MULES[field.index]
         val firstMule = mules.first()
         val secondMule = mules.last()
-        return firstMule.first.field == color && firstMule.second.field == color ||
-                secondMule.first.field == color && secondMule.second.field == color
+        return firstMule.first.index.asField == color && firstMule.second.index.asField == color ||
+                secondMule.first.index.asField == color && secondMule.second.index.asField == color
     }
 
-    fun willCloseMule(fromField: Int, toField: Int, color: Color): Boolean {
-        val mules = COMPLETABLE_MULES[toField]
+    fun willCloseMule(fromField: FieldIndex, toField: FieldIndex, color: Color): Boolean {
+        val mules = COMPLETABLE_MULES[toField.index]
         val firstMule = mules.first()
         val secondMule = mules.last()
-        fun checkMule(firstMule: Pair<Int, Int>) =
-            firstMule.first != fromField && firstMule.first.field == color &&
-                    firstMule.second != fromField && firstMule.second.field == color
+        fun checkMule(firstMule: Pair<FieldIndex, FieldIndex>) =
+            firstMule.first != fromField && firstMule.first.index.asField == color &&
+                    firstMule.second != fromField && firstMule.second.index.asField == color
         return checkMule(firstMule) || checkMule(secondMule)
     }
 
     fun imcompleteMillCount(color: Color) = emptyFieldsIndices().count { field -> willCloseMule(field, color) }
 
-    private val Int.field: Field
+    private val Int.asField: Field
         get() = fields[this]
 
     fun showWinner() =
@@ -155,7 +156,7 @@ class Board(
 
     fun potentialMill(move: Move): Int =
         MULES.filter { move.toField in it }
-            .count { muleFields -> !muleFields.map { fields[it] }.any { it == move.color.opposite } }
+            .count { muleFields -> !muleFields.map { fields[it.index] }.any { it == move.color.opposite } }
 
 
     companion object {
@@ -176,10 +177,10 @@ class Board(
             listOf(8, 12, 17),
             listOf(5, 13, 20),
             listOf(2, 14, 23)
-        )
+        ).map { list -> list.map { field -> field.asFieldIndex } }
 
-        val COMPLETABLE_MULES: List<List<Pair<Int, Int>>>
-            get() = (0..<24).map { fieldIndex ->
+        val COMPLETABLE_MULES: List<List<Pair<FieldIndex, FieldIndex>>>
+            get() = FieldIndex.INDEXES.map { fieldIndex ->
                 MULES.filter { mule -> fieldIndex in mule }.map { it - fieldIndex }.map { Pair(it.first(), it.last()) }
             }
 
@@ -208,8 +209,6 @@ class Board(
             listOf(9, 22),
             listOf(19, 21, 23),
             listOf(14, 22)
-        )
-
-        const val MAX_FIELDS = 24
+        ).map { list -> list.map { field -> field.asFieldIndex } }.toTypedArray()
     }
 }

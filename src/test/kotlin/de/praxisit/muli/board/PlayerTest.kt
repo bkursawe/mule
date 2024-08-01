@@ -1,5 +1,6 @@
 package de.praxisit.muli.board
 
+import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
 import de.praxisit.muli.board.Phase.JUMPING
 import de.praxisit.muli.board.Phase.MOVING
 import org.assertj.core.api.Assertions.assertThat
@@ -161,4 +162,6 @@ class PlayerTest {
             }
         }
     }
+
+    private fun Board.setStone(field: Int, color: Color) = setStone(field.asFieldIndex, color)
 }
