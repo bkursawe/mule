@@ -232,8 +232,9 @@ class BoardTest {
     @Nested
     inner class ChooseMove {
         inner class TestEvaluationStrategy : EvaluationStrategy {
-            override fun evaluate(board: Board): Double {
-                return 0.0
+            override fun evaluate(board: Board) = when {
+                board.getStone(10) != Empty -> 10.0
+                else                        -> 0.0
             }
         }
 

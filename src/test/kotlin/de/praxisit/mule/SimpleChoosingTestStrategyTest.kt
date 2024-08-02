@@ -5,10 +5,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class SimpleChoosingTestStrategyTest {
-    inner class TestStrategy(private val toField: Int, private val fromField: Int? = null) : EvaluationStrategy {
-        override fun evaluate(board: Board): Double {
-            return 0.0
-        }
+    inner class TestStrategy(private val field1: Int, private val emptyField: Int? = null) : EvaluationStrategy {
+        override fun evaluate(board: Board) =
+            when {
+                emptyField != null && board.getStone(emptyField.asFieldIndex) == Empty -> 10.0
+                board.getStone(field1.asFieldIndex) != Empty                           -> 10.0
+                else                                                                   -> 0.0
+            }
     }
 
     @Test
