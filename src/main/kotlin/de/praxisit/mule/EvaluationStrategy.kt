@@ -1,17 +1,14 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
 fun interface EvaluationStrategy {
-    fun evaluate(board: Board, move: Move): Double
+    fun evaluate(board: Board): Double
 }
 
 class SimpleEvaluationStrategy : EvaluationStrategy {
-    override fun evaluate(board: Board, move: Move): Double {
+    override fun evaluate(board: Board): Double {
         val activePlayerColor = board.activePlayerColor
-        require(activePlayerColor == move.color)
         val pointsForActive = board.stonesOnBoard(activePlayerColor) +
-                board.imcompleteMillCount(activePlayerColor) +
-                board.potentialMill(move) +
-                if (move.isCaptureMove) 5 else 0
+                board.imcompleteMillCount(activePlayerColor)
         val oppositePlayerColor = activePlayerColor.opposite
         val pointsForOpposite = board.stonesOnBoard(oppositePlayerColor) +
                 board.imcompleteMillCount(oppositePlayerColor)

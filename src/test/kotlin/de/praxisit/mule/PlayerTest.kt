@@ -1,8 +1,8 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
-import de.praxisit.muli.board.Phase.JUMPING
-import de.praxisit.muli.board.Phase.MOVING
+import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
+import de.praxisit.mule.Phase.JUMPING
+import de.praxisit.mule.Phase.MOVING
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested

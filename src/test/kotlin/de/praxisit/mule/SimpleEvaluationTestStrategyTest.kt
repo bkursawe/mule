@@ -1,6 +1,6 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
+import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -12,7 +12,7 @@ class SimpleEvaluationTestStrategyTest {
         val board = Board()
         val move = createSetMove(White, 0)
 
-        val points = strategy.evaluate(board, move)
+        val points = strategy.evaluate(board)
 
         assertThat(points).isBetween(2.0, 3.0)
     }
@@ -22,7 +22,7 @@ class SimpleEvaluationTestStrategyTest {
         val board = Board().setStone(0, White)
         val move = createSetMove(White, 1)
 
-        val points = strategy.evaluate(board, move)
+        val points = strategy.evaluate(board)
 
         assertThat(points).isBetween(3.0, 4.0)
     }

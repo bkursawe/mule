@@ -1,7 +1,7 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
-import de.praxisit.muli.board.Phase.LOOSE
+import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
+import de.praxisit.mule.Phase.LOOSE
 
 //
 //   0--------1--------2

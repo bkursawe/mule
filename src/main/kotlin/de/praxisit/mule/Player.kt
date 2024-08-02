@@ -1,6 +1,6 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.Phase.*
+import de.praxisit.mule.Phase.*
 
 class Player internal constructor(
     val color: Color,

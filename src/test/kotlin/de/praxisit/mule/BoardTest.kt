@@ -1,8 +1,8 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.Board.Companion.COMPLETABLE_MULES
-import de.praxisit.muli.board.Board.Companion.MULES
-import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
+import de.praxisit.mule.Board.Companion.COMPLETABLE_MULES
+import de.praxisit.mule.Board.Companion.MULES
+import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -127,21 +127,16 @@ class BoardTest {
 
         @Test
         fun `set a stone to an invalid field`() {
-            assertThatThrownBy {
-                emptyBoard.setStone(
-                    24,
-                    White
-                )
-            }.isInstanceOf(ArrayIndexOutOfBoundsException::class.java)
-            assertThatThrownBy {
-                emptyBoard.setStone(24, White)
-            }.isInstanceOf(ArrayIndexOutOfBoundsException::class.java)
+            assertThatThrownBy { emptyBoard.setStone(-1, White) }
+                .isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { emptyBoard.setStone(24, White) }
+                .isInstanceOf(IllegalArgumentException::class.java)
         }
 
         @Test
         fun `get a stone from an invalid field`() {
-            assertThatThrownBy { emptyBoard.getStone(24) }.isInstanceOf(ArrayIndexOutOfBoundsException::class.java)
-            assertThatThrownBy { emptyBoard.getStone(24) }.isInstanceOf(ArrayIndexOutOfBoundsException::class.java)
+            assertThatThrownBy { emptyBoard.getStone(-1) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { emptyBoard.getStone(24) }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 
@@ -198,7 +193,7 @@ class BoardTest {
         @CsvSource(
             value = [
                 "0,true",
-                "3,true",
+                "3,false",
                 "7,false",
                 "22,false"
             ]
@@ -207,7 +202,7 @@ class BoardTest {
             val board = emptyBoard.setStone(1, White).setStone(2, White)
                 .setStone(4, Black).setStone(5, Black)
 
-            assertThat(board.willCloseMule(field, White))
+            assertThat(board.willCloseMule(field, White)).isEqualTo(expected)
         }
     }
 
@@ -237,9 +232,8 @@ class BoardTest {
     @Nested
     inner class ChooseMove {
         inner class TestEvaluationStrategy : EvaluationStrategy {
-            override fun evaluate(board: Board, move: Move): Double {
-                return if (move.toField.index == 10) 10.0
-                else 0.0
+            override fun evaluate(board: Board): Double {
+                return 0.0
             }
         }
 
@@ -250,7 +244,7 @@ class BoardTest {
 
             val move = board.chooseMove()
 
-            assertThat(move!!.toField).isEqualTo(10)
+            assertThat(move!!.toField.index).isEqualTo(10)
         }
     }
 

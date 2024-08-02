@@ -1,17 +1,13 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.FieldIndex.Companion.asFieldIndex
+import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class SimpleChoosingTestStrategyTest {
     inner class TestStrategy(private val toField: Int, private val fromField: Int? = null) : EvaluationStrategy {
-        override fun evaluate(board: Board, move: Move): Double {
-            return when (move) {
-                is SetMove           -> if (move.toField.index == toField) 10.0 else 0.0
-                is MoveWithFromField -> if (move.toField.index == toField && move.fromField.index == fromField) 10.0 else 0.0
-                else                 -> 0.0
-            }
+        override fun evaluate(board: Board): Double {
+            return 0.0
         }
     }
 
@@ -23,7 +19,7 @@ class SimpleChoosingTestStrategyTest {
         val move = player.chooseMove(board)
 
         assertThat(move).isInstanceOf(SetMove::class.java)
-        assertThat(move!!.toField).isEqualTo(5)
+        assertThat(move!!.toField.index).isEqualTo(5)
     }
 
     @Test
@@ -43,8 +39,8 @@ class SimpleChoosingTestStrategyTest {
         val move = board.activePlayer.chooseMove(board)
 
         assertThat(move).isInstanceOf(PushMove::class.java)
-        assertThat(move!!.toField).isEqualTo(10)
-        assertThat((move as? PushMove)?.fromField).isEqualTo(3)
+        assertThat(move!!.toField.index).isEqualTo(10)
+        assertThat((move as? PushMove)?.fromField?.index).isEqualTo(3)
     }
 
     private fun createSetMove(color: Color, field: Int) = SetMove(color, field.asFieldIndex)

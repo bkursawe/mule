@@ -1,4 +1,4 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
 sealed class Field
 

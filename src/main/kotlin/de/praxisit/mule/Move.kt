@@ -1,6 +1,6 @@
-package de.praxisit.muli.board
+package de.praxisit.mule
 
-import de.praxisit.muli.board.Board.Companion.CONNECTIONS
+import de.praxisit.mule.Board.Companion.CONNECTIONS
 
 @Suppress("kotlin:S1192")
 sealed class Move(val color: Color, val toField: FieldIndex, val capturedField: FieldIndex?) {
@@ -24,7 +24,7 @@ class SetMove(color: Color, toField: FieldIndex, capturedField: FieldIndex? = nu
         return SetMove(color, toField, field)
     }
 
-    override fun toString() = "SetMove($color, $toField${capturedField?.let { ", $it" } ?: ""})"
+    override fun toString() = "SetMove($color, ${toField.index}${capturedField?.let { ", ${it.index}" } ?: ""})"
     override fun equals(other: Any?): Boolean {
         val otherMove = other as? SetMove ?: return false
         return color == otherMove.color && toField == otherMove.toField && capturedField == otherMove.capturedField
@@ -61,7 +61,8 @@ class PushMove(color: Color, fromField: FieldIndex, toField: FieldIndex, capture
         return PushMove(color, fromField, toField, field)
     }
 
-    override fun toString() = "PushMove($color, $fromField -> $toField${capturedField?.let { ", $it" } ?: ""})"
+    override fun toString() =
+        "PushMove($color, ${fromField.index} -> ${toField.index}${capturedField?.let { ", ${it.index}" } ?: ""})"
     override fun equals(other: Any?): Boolean {
         val otherMove = other as? PushMove ?: return false
         return color == otherMove.color && fromField == otherMove.fromField && toField == otherMove.toField && capturedField == otherMove.capturedField
@@ -78,7 +79,8 @@ class JumpMove(color: Color, fromField: FieldIndex, toField: FieldIndex, capture
         return JumpMove(color, fromField, toField, field)
     }
 
-    override fun toString() = "JumpMove($color, $fromField -> $toField${capturedField?.let { ", $it" } ?: ""})"
+    override fun toString() =
+        "JumpMove($color, ${fromField.index} -> ${toField.index}${capturedField?.let { ", ${it.index}" } ?: ""})"
     override fun equals(other: Any?): Boolean {
         val otherMove = other as? JumpMove ?: return false
         return color == otherMove.color && fromField == otherMove.fromField && toField == otherMove.toField && capturedField == otherMove.capturedField
