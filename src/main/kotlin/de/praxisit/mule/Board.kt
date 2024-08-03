@@ -45,6 +45,7 @@ class Board(
             is SetMove  -> board.setStone(move.toField, move.color)
             is PushMove -> board.moveStone(move.fromField, move.toField)
             is JumpMove -> board.moveStone(move.fromField, move.toField)
+            is NoMove -> throw IllegalMoveException(NoMove, "Cannot move")
         }
 
         if (move.capturedField != null) board = board.playerLooseStone().removeStone(move.capturedField)
@@ -53,6 +54,12 @@ class Board(
 
     val activePlayer: Player
         get() = if (activePlayerColor == White) white else black
+
+    val legalMoves: List<Move>
+        get() = activePlayer.legalMoves(this)
+
+    val evaluation: Double
+        get() = activePlayer.evaluate(this)
 
     private fun playerLooseStone() = if (activePlayerColor == White)
         copy(black = black.loseStone())
@@ -153,11 +160,6 @@ class Board(
         white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
 
     fun stonesOnBoard(color: Color) = fields.count { field -> field == color }
-
-    fun potentialMill(move: Move): Int =
-        MULES.filter { move.toField in it }
-            .count { muleFields -> !muleFields.map { fields[it.index] }.any { it == move.color.opposite } }
-
 
     companion object {
         val MULES = arrayOf(

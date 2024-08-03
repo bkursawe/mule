@@ -24,15 +24,6 @@ class Player internal constructor(
         SimpleChoosingStrategy()
     )
 
-    constructor(color: Color, choosingStrategy: ChoosingStrategy) : this(
-        color,
-        9,
-        0,
-        SETTING,
-        SimpleEvaluationStrategy(),
-        choosingStrategy
-    )
-
     private fun copy(
         color: Color = this.color,
         stones: Int = this.stones,
@@ -72,6 +63,7 @@ class Player internal constructor(
             when (move) {
                 is SetMove           -> board.willCloseMule(move.toField, color)
                 is MoveWithFromField -> board.willCloseMule(move.fromField, move.toField, color)
+                is NoMove -> throw IllegalMoveException(NoMove, "Cannot move")
             }
         }
         return captureMoves.flatMap { move ->
