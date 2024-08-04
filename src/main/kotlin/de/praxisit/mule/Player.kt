@@ -8,7 +8,7 @@ class Player internal constructor(
     val stonesSet: Int,
     val phase: Phase,
     private val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy(),
-    private val choosingStrategy: ChoosingStrategy = SimpleChoosingStrategy()
+    private val choosingStrategy: ChoosingStrategy = AlphaBetaStrategy()
 ) : EvaluationStrategy by evaluationStrategy, ChoosingStrategy by choosingStrategy {
     val remainingStones: Int
         get() = 9 - stonesSet

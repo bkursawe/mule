@@ -6,13 +6,13 @@ fun interface EvaluationStrategy {
 
 class SimpleEvaluationStrategy : EvaluationStrategy {
     override fun evaluate(board: Board): Double {
-        val activePlayerColor = board.activePlayerColor
-        val pointsForActive = board.stonesOnBoard(activePlayerColor) +
-                board.imcompleteMillCount(activePlayerColor)
-        val oppositePlayerColor = activePlayerColor.opposite
-        val pointsForOpposite = board.stonesOnBoard(oppositePlayerColor) +
-                board.imcompleteMillCount(oppositePlayerColor)
+        val pointsForWhite = board.stonesOnBoard(White) +
+                board.imcompleteMillCount(White) +
+                board.muleCount(White)
+        val pointsForBlack = board.stonesOnBoard(Black) +
+                board.imcompleteMillCount(Black) +
+                board.muleCount(White)
 
-        return (pointsForActive - pointsForOpposite).toDouble()
+        return (pointsForWhite - pointsForBlack).toDouble()
     }
 }

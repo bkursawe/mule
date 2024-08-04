@@ -42,7 +42,7 @@ class Board(
         if (move is SetMove) board = board.playerSetStone()
 
         board = when (move) {
-            is SetMove  -> board.setStone(move.toField, move.color)
+            is SetMove -> board.setStone(move.color, move.toField)
             is PushMove -> board.moveStone(move.fromField, move.toField)
             is JumpMove -> board.moveStone(move.fromField, move.toField)
             is NoMove -> throw IllegalMoveException(NoMove, "Cannot move")
@@ -73,7 +73,7 @@ class Board(
 
     internal fun switchPlayer() = copy(activePlayerColor = activePlayerColor.opposite)
 
-    fun setStone(index: FieldIndex, color: Color): Board {
+    fun setStone(color: Color, index: FieldIndex): Board {
         val board = copy(fields = fields.copyOf())
         board.fields[index.index] = color
         return board
@@ -148,8 +148,13 @@ class Board(
 
     fun imcompleteMillCount(color: Color) = emptyFieldsIndices().count { field -> willCloseMule(field, color) }
 
+    fun muleCount(color: Color) = MULES.count { mule -> mule.all { field -> field.asField == color } }
+
     private val Int.asField: Field
         get() = fields[this]
+
+    private val FieldIndex.asField: Field
+        get() = fields[this.index]
 
     fun showWinner() =
         if (white.phase == LOOSE || white.legalMoves(this).isEmpty()) "Black is the winner"

@@ -39,7 +39,7 @@ class BoardTest {
 
             @Test
             fun `draw a SetMove with a black capture`() {
-                val board = Board().setStone(0, White).setStone(1, White).setStone(4, Black)
+                val board = Board().setStone(White, 0).setStone(White, 1).setStone(Black, 4)
                 val move = SetMove(White, 2.asFieldIndex, 4.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -50,7 +50,7 @@ class BoardTest {
 
             @Test
             fun `draw a SetMove with a white capture`() {
-                val board = Board().setStone(0, White).setStone(1, Black).setStone(4, Black).switchPlayer()
+                val board = Board().setStone(White, 0).setStone(Black, 1).setStone(Black, 4).switchPlayer()
                 val move = SetMove(Black, 7.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -64,7 +64,7 @@ class BoardTest {
         inner class PushMove {
             @Test
             fun `draw a simple PushMove`() {
-                val board = Board().setStone(9, White).setStone(1, White)
+                val board = Board().setStone(White, 9).setStone(White, 1)
                 val move = PushMove(White, 9.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -75,7 +75,7 @@ class BoardTest {
 
             @Test
             fun `draw a PushMove with a capture`() {
-                val board = Board().setStone(9, White).setStone(1, White).setStone(2, White).setStone(4, Black)
+                val board = Board().setStone(White, 9).setStone(White, 1).setStone(White, 2).setStone(Black, 4)
                 val move = PushMove(White, 9.asFieldIndex, 0.asFieldIndex, 4.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -89,7 +89,7 @@ class BoardTest {
         inner class JumpMove {
             @Test
             fun `draw a simple PushMove`() {
-                val board = Board().setStone(22, White).setStone(1, White).setStone(3, White)
+                val board = Board().setStone(White, 22).setStone(White, 1).setStone(White, 3)
                 val move = JumpMove(White, 22.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -100,7 +100,7 @@ class BoardTest {
 
             @Test
             fun `draw a PushMove with a capture`() {
-                val board = Board().setStone(22, White).setStone(1, White).setStone(2, White).setStone(4, Black)
+                val board = Board().setStone(White, 22).setStone(White, 1).setStone(White, 2).setStone(Black, 4)
                 val move = JumpMove(White, 22.asFieldIndex, 0.asFieldIndex, 4.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -116,8 +116,8 @@ class BoardTest {
         @Test
         fun `set and get stones`() {
             val board = emptyBoard
-                .setStone(5, White)
-                .setStone(8, Black)
+                .setStone(White, 5)
+                .setStone(Black, 8)
 
             assertThat(board.getStone(5)).isEqualTo(White)
             assertThat(board.getStone(8)).isEqualTo(Black)
@@ -127,9 +127,9 @@ class BoardTest {
 
         @Test
         fun `set a stone to an invalid field`() {
-            assertThatThrownBy { emptyBoard.setStone(-1, White) }
+            assertThatThrownBy { emptyBoard.setStone(White, -1) }
                 .isInstanceOf(IllegalArgumentException::class.java)
-            assertThatThrownBy { emptyBoard.setStone(24, White) }
+            assertThatThrownBy { emptyBoard.setStone(White, 24) }
                 .isInstanceOf(IllegalArgumentException::class.java)
         }
 
@@ -144,7 +144,7 @@ class BoardTest {
     inner class MoveStone {
         @Test
         fun `from used field to empty field`() {
-            val board = emptyBoard.setStone(10, White)
+            val board = emptyBoard.setStone(White, 10)
 
             val endBoard = board.moveStone(10, 11)
 
@@ -155,8 +155,8 @@ class BoardTest {
         @Test
         fun `from used field to another used field`() {
             val board = emptyBoard
-                .setStone(10, White)
-                .setStone(9, Black)
+                .setStone(White, 10)
+                .setStone(Black, 9)
 
             assertThatThrownBy { board.moveStone(10, 9) }.isInstanceOf(IllegalArgumentException::class.java)
         }
@@ -168,7 +168,7 @@ class BoardTest {
 
         @Test
         fun `from used field to the same field`() {
-            val board = emptyBoard.setStone(15, Black)
+            val board = emptyBoard.setStone(Black, 15)
 
             assertThatThrownBy { board.moveStone(15, 15) }.isInstanceOf(IllegalArgumentException::class.java)
         }
@@ -199,10 +199,32 @@ class BoardTest {
             ]
         )
         fun `will close mule`(field: FieldIndex, expected: Boolean) {
-            val board = emptyBoard.setStone(1, White).setStone(2, White)
-                .setStone(4, Black).setStone(5, Black)
+            val board = emptyBoard.setStone(White, 1).setStone(White, 2)
+                .setStone(Black, 4).setStone(Black, 5)
 
             assertThat(board.willCloseMule(field, White)).isEqualTo(expected)
+        }
+    }
+
+    @Nested
+    inner class MuleCount {
+        val board = emptyBoard
+            .setStones(White, 3, 4, 5)
+            .setStones(White, 0, 9, 21)
+            .setStone(White, 1)
+            .setStones(Black, 6, 7, 8)
+            .setStones(Black, 18, 19, 20)
+            .setStones(Black, 16, 19, 22)
+            .setStone(Black, 23)
+
+        @Test
+        fun `muleCount for White`() {
+            assertThat(board.muleCount(White)).isEqualTo(2)
+        }
+
+        @Test
+        fun `muleCount for Black`() {
+            assertThat(board.muleCount(Black)).isEqualTo(3)
         }
     }
 
@@ -217,12 +239,12 @@ class BoardTest {
         @Test
         fun `find capturable pieces in complex board`() {
             val board = emptyBoard
-                .setStone(1, White)
-                .setStone(2, White)
-                .setStone(3, Black)
-                .setStone(4, Black)
-                .setStone(5, Black)
-                .setStone(6, Black)
+                .setStone(White, 1)
+                .setStone(White, 2)
+                .setStone(Black, 3)
+                .setStone(Black, 4)
+                .setStone(Black, 5)
+                .setStone(Black, 6)
 
             assertThat(board.capturablePieces(White).map { it.index }).containsExactlyInAnyOrder(1, 2)
             assertThat(board.capturablePieces(Black).map { it.index }).containsExactlyInAnyOrder(6)
@@ -262,9 +284,9 @@ class BoardTest {
         fun `white has no moves`() {
             val white = Player(White, 4, 9, Phase.MOVING)
             val black = Player(Black, 4, 9, Phase.MOVING)
-            val board = Board(white = white, black = black).setStone(0, White).setStone(1, White).setStone(2, White)
-                .setStone(9, White)
-                .setStone(4, Black).setStone(10, Black).setStone(14, Black).setStone(21, Black)
+            val board = Board(white = white, black = black).setStone(White, 0).setStone(White, 1).setStone(White, 2)
+                .setStone(White, 9)
+                .setStone(Black, 4).setStone(Black, 10).setStone(Black, 14).setStone(Black, 21)
 
             assertThat(board.noLooser()).isFalse()
             assertThat(board.showWinner()).isEqualTo("Black is the winner")
@@ -275,9 +297,9 @@ class BoardTest {
             val white = Player(White, 4, 9, Phase.MOVING)
             val black = Player(Black, 4, 9, Phase.MOVING)
             val board =
-                Board(white = white, black = black, activePlayerColor = Black).setStone(0, Black).setStone(1, Black)
-                    .setStone(2, Black).setStone(9, Black)
-                    .setStone(4, White).setStone(10, White).setStone(14, White).setStone(21, White)
+                Board(white = white, black = black, activePlayerColor = Black).setStone(Black, 0).setStone(Black, 1)
+                    .setStone(Black, 2).setStone(Black, 9)
+                    .setStone(White, 4).setStone(White, 10).setStone(White, 14).setStone(White, 21)
 
             assertThat(board.noLooser()).isFalse()
             assertThat(board.showWinner()).isEqualTo("White is the winner")
@@ -313,9 +335,9 @@ class BoardTest {
         @Test
         fun `draw board with some stones`() {
             val board = emptyBoard
-                .setStone(3, White)
-                .setStone(4, White)
-                .setStone(5, Black)
+                .setStone(White, 3)
+                .setStone(White, 4)
+                .setStone(Black, 5)
             val output = board.printBoard()
             val expected = """
                 O--------O--------O
@@ -348,7 +370,10 @@ class BoardTest {
         assertThat(board2.activePlayerColor).isEqualTo(White)
     }
 
-    private fun Board.setStone(field: Int, color: Color) = setStone(field.asFieldIndex, color)
+    private fun Board.setStone(color: Color, field: Int) = setStone(color, field.asFieldIndex)
+    private fun Board.setStones(color: Color, vararg fields: Int) =
+        fields.fold(this) { board, field -> board.setStone(color, field) }
+
     private fun Board.getStone(field: Int) = getStone(field.asFieldIndex)
     private fun Board.moveStone(from: Int, to: Int) = moveStone(from.asFieldIndex, to.asFieldIndex)
 }

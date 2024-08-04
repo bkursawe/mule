@@ -25,5 +25,5 @@ class SimpleEvaluationTestStrategyTest {
         assertThat(points).isBetween(1.0, 2.0)
     }
 
-    private fun Board.setStone(field: Int, color: Color) = setStone(field.asFieldIndex, color)
+    private fun Board.setStone(field: Int, color: Color) = setStone(color, field.asFieldIndex)
 }

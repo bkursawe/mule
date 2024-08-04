@@ -163,5 +163,5 @@ class PlayerTest {
         }
     }
 
-    private fun Board.setStone(field: Int, color: Color) = setStone(field.asFieldIndex, color)
+    private fun Board.setStone(field: Int, color: Color) = setStone(color, field.asFieldIndex)
 }
