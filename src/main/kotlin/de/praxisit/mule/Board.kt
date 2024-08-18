@@ -22,15 +22,17 @@ class Board(
     private val fields: Array<Field> = Array(24) { _ -> Empty },
     private val white: Player = Player(White),
     private val black: Player = Player(Black),
-    internal val activePlayerColor: Color = White
+    internal val activePlayerColor: Color = White,
+    private val history: List<Board> = emptyList()
 ) {
 
     fun copy(
         fields: Array<Field> = this.fields,
         white: Player = this.white,
         black: Player = this.black,
-        activePlayerColor: Color = this.activePlayerColor
-    ) = Board(fields, white, black, activePlayerColor)
+        activePlayerColor: Color = this.activePlayerColor,
+        history: List<Board> = this.history
+    ) = Board(fields, white, black, activePlayerColor, history)
 
     fun fieldsIndicesWithColor(color: Color) =
         fields.withIndex().filter { it.value == color }.map { it.index.asFieldIndex }.toSet()
@@ -38,14 +40,14 @@ class Board(
     fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index.asFieldIndex }.toSet()
 
     fun draw(move: Move): Board {
-        var board = this
+        var board = copy(history = history + this)
         if (move is SetMove) board = board.playerSetStone()
 
         board = when (move) {
             is SetMove -> board.setStone(move.color, move.toField)
             is PushMove -> board.moveStone(move.fromField, move.toField)
             is JumpMove -> board.moveStone(move.fromField, move.toField)
-            is NoMove -> throw IllegalMoveException(NoMove, "Cannot move")
+            is NoMove  -> throw IllegalMoveException(NoMove, "Cannot move")
         }
 
         if (move.capturedField != null) board = board.playerLooseStone().removeStone(move.capturedField)
@@ -103,6 +105,9 @@ class Board(
 
     fun chooseMove() = activePlayer.chooseMove(this)
 
+    val isRepeated: Boolean
+        get() = history.count { it == this } >= 2
+
     fun printBoard(): String {
         fun f(index: Int) = when (fields[index]) {
             Empty -> "O"
@@ -157,9 +162,12 @@ class Board(
         get() = fields[this.index]
 
     fun showWinner() =
-        if (white.phase == LOOSE || white.legalMoves(this).isEmpty()) "Black is the winner"
-        else if (black.phase == LOOSE || black.legalMoves(this).isEmpty()) "White is the winner"
-        else "No winner yet"
+        when {
+            white.phase == LOOSE || white.legalMoves(this).isEmpty() -> "Black is the winner"
+            black.phase == LOOSE || black.legalMoves(this).isEmpty() -> "White is the winner"
+            isRepeated                                               -> "It's a remis"
+            else                                                     -> "No winner yet"
+        }
 
     fun noLooser() =
         white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()

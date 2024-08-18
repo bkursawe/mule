@@ -1,6 +1,8 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.Phase.*
+import kotlin.Double.Companion.NEGATIVE_INFINITY
+import kotlin.Double.Companion.POSITIVE_INFINITY
 
 class Player internal constructor(
     val color: Color,
@@ -12,6 +14,8 @@ class Player internal constructor(
 ) : EvaluationStrategy by evaluationStrategy, ChoosingStrategy by choosingStrategy {
     val remainingStones: Int
         get() = 9 - stonesSet
+
+    val worstEvaluation = if (color == White) NEGATIVE_INFINITY else POSITIVE_INFINITY
 
     constructor(color: Color) : this(color, 9, 0, SETTING)
 
@@ -50,10 +54,10 @@ class Player internal constructor(
 
     fun legalMoves(board: Board): List<Move> {
         val moves = when (phase) {
-            SETTING -> settingMoves(board)
-            MOVING  -> pushingMoves(board)
-            JUMPING -> jumpMoves(board)
-            LOOSE   -> emptyList()
+            SETTING      -> settingMoves(board)
+            MOVING       -> pushingMoves(board)
+            JUMPING      -> jumpMoves(board)
+            LOOSE, REMIS -> emptyList()
         }
         return extendMovesByCaptures(moves, board)
     }

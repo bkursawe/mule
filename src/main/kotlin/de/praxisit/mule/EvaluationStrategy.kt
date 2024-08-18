@@ -7,11 +7,11 @@ fun interface EvaluationStrategy {
 class SimpleEvaluationStrategy : EvaluationStrategy {
     override fun evaluate(board: Board): Double {
         val pointsForWhite = board.stonesOnBoard(White) +
-                board.imcompleteMillCount(White) +
-                board.muleCount(White)
+                5 * board.imcompleteMillCount(White) +
+                10 * board.muleCount(White)
         val pointsForBlack = board.stonesOnBoard(Black) +
-                board.imcompleteMillCount(Black) +
-                board.muleCount(White)
+                5 * board.imcompleteMillCount(Black) +
+                10 * board.muleCount(Black)
 
         return (pointsForWhite - pointsForBlack).toDouble()
     }

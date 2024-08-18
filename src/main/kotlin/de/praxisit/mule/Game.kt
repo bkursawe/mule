@@ -4,15 +4,27 @@ import java.util.*
 
 
 fun main() {
-    Game().start()
+    Game().startComputer()
 }
 
 class Game {
     private var board = Board()
     private var drawNumber = 0
 
+    fun startComputer() {
+        while (board.noLooser()) {
+            println(board.printBoard())
+            val move = board.chooseMove()
+            print("${drawNumber++}: ")
+            println(move)
+            board = board.draw(move).switchPlayer()
+        }
+        println(board.printBoard())
+        println(board.showWinner())
 
-    fun start() {
+    }
+
+    fun startHuman() {
         val humanColor = askColor()
 
         while (board.noLooser()) {
@@ -22,18 +34,17 @@ class Game {
             } else {
                 board.chooseMove()
             }
-            if (move != null) {
-                print("${drawNumber++}: ")
-                println(move)
-                board = board.draw(move).switchPlayer()
-            }
+            print("${drawNumber++}: ")
+            println(move)
+            board = board.draw(move).switchPlayer()
         }
+        println(board.printBoard())
         println(board.showWinner())
     }
 
-    private fun chooseMove(board: Board): Move? {
+    private fun chooseMove(board: Board): Move {
         val moves = board.activePlayer.legalMoves(board)
-        if (moves.isEmpty()) return null
+        if (moves.isEmpty()) return NoMove
 
         moves.mapIndexed { index, move -> "$index: $move" }.forEach { println(it) }
         println("Choose a move by number: ")
