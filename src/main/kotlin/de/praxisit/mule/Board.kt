@@ -37,7 +37,9 @@ class Board(
     fun fieldsIndicesWithColor(color: Color) =
         fields.withIndex().filter { it.value == color }.map { it.index.asFieldIndex }.toSet()
 
-    fun emptyFieldsIndices() = fields.withIndex().filter { it.value == Empty }.map { it.index.asFieldIndex }.toSet()
+    val emptyFieldsIndices: Set<FieldIndex> by lazy {
+        fields.withIndex().filter { it.value == Empty }.map { it.index.asFieldIndex }.toSet()
+    }
 
     fun draw(move: Move): Board {
         var board = copy(history = history + this)
@@ -54,14 +56,11 @@ class Board(
         return board
     }
 
-    val activePlayer: Player
-        get() = if (activePlayerColor == White) white else black
+    val activePlayer: Player by lazy { if (activePlayerColor == White) white else black }
 
-    val legalMoves: List<Move>
-        get() = activePlayer.legalMoves(this)
+    val legalMoves: List<Move> by lazy { activePlayer.legalMoves(this) }
 
-    val evaluation: Double
-        get() = activePlayer.evaluate(this)
+    val evaluation: Double by lazy { activePlayer.evaluate(this) }
 
     private fun playerLooseStone() = if (activePlayerColor == White)
         copy(black = black.loseStone())
@@ -73,7 +72,7 @@ class Board(
     else
         copy(black = black.setStone())
 
-    internal fun switchPlayer() = copy(activePlayerColor = activePlayerColor.opposite)
+    internal val withSwitchedPlayer: Board by lazy { copy(activePlayerColor = activePlayerColor.opposite) }
 
     fun setStone(color: Color, index: FieldIndex): Board {
         val board = copy(fields = fields.copyOf())
@@ -105,16 +104,16 @@ class Board(
 
     fun chooseMove() = activePlayer.chooseMove(this)
 
-    val isRepeated: Boolean
-        get() = history.count { it == this } >= 2
+    val isRepeated: Boolean by lazy { history.count { it == this } >= 2 }
 
-    fun printBoard(): String {
-        fun f(index: Int) = when (fields[index]) {
-            Empty -> "O"
-            White -> "W"
-            Black -> "B"
-        }
-        return """
+    private fun f(index: Int) = when (fields[index]) {
+        Empty -> "O"
+        White -> "W"
+        Black -> "B"
+    }
+
+    val printedBoard: String by lazy {
+        """
              ${f(0)}--------${f(1)}--------${f(2)}
              |        |        |
              |  ${f(3)}-----${f(4)}-----${f(5)}  |
@@ -128,6 +127,8 @@ class Board(
              |  ${f(18)}-----${f(19)}-----${f(20)}  |
              |        |        |
              ${f(21)}--------${f(22)}--------${f(23)}
+             ${if (activePlayer == white) "*" else " "} White: stones = ${white.stones} phase = ${white.phase}
+             ${if (activePlayer == black) "*" else " "} Black: stones = ${black.stones} phase = ${black.phase}
         """.trimIndent()
     }
 
@@ -151,7 +152,7 @@ class Board(
         return checkMule(firstMule) || checkMule(secondMule)
     }
 
-    fun imcompleteMillCount(color: Color) = emptyFieldsIndices().count { field -> willCloseMule(field, color) }
+    fun imcompleteMillCount(color: Color) = emptyFieldsIndices.count { field -> willCloseMule(field, color) }
 
     fun muleCount(color: Color) = MULES.count { mule -> mule.all { field -> field.asField == color } }
 
@@ -161,16 +162,15 @@ class Board(
     private val FieldIndex.asField: Field
         get() = fields[this.index]
 
-    fun showWinner() =
-        when {
+    val winner
+        get() = when {
             white.phase == LOOSE || white.legalMoves(this).isEmpty() -> "Black is the winner"
             black.phase == LOOSE || black.legalMoves(this).isEmpty() -> "White is the winner"
             isRepeated                                               -> "It's a remis"
             else                                                     -> "No winner yet"
         }
 
-    fun noLooser() =
-        white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
+    val hasNoLooser get() = white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
 
     fun stonesOnBoard(color: Color) = fields.count { field -> field == color }
 

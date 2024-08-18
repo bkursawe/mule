@@ -18,7 +18,7 @@ class BoardTest {
     inner class CreateBoard {
         @Test
         fun `create empty board`() {
-            assertThat(emptyBoard.emptyFieldsIndices()).hasSize(24)
+            assertThat(emptyBoard.emptyFieldsIndices).hasSize(24)
         }
     }
 
@@ -50,7 +50,7 @@ class BoardTest {
 
             @Test
             fun `draw a SetMove with a white capture`() {
-                val board = Board().setStone(White, 0).setStone(Black, 1).setStone(Black, 4).switchPlayer()
+                val board = Board().setStone(White, 0).setStone(Black, 1).setStone(Black, 4).withSwitchedPlayer
                 val move = SetMove(Black, 7.asFieldIndex, 0.asFieldIndex)
 
                 val boardAfter = board.draw(move)
@@ -267,7 +267,7 @@ class BoardTest {
 
             val move = board.chooseMove()
 
-            assertThat(move!!.toField.index).isEqualTo(10)
+            assertThat(move.toField.index).isEqualTo(10)
         }
     }
 
@@ -276,8 +276,8 @@ class BoardTest {
         @Test
         fun `no current looser`() {
             val board = Board()
-            assertThat(board.noLooser()).isTrue()
-            assertThat(board.showWinner()).isEqualTo("No winner yet")
+            assertThat(board.hasNoLooser).isTrue()
+            assertThat(board.winner).isEqualTo("No winner yet")
         }
 
         @Test
@@ -288,8 +288,8 @@ class BoardTest {
                 .setStone(White, 9)
                 .setStone(Black, 4).setStone(Black, 10).setStone(Black, 14).setStone(Black, 21)
 
-            assertThat(board.noLooser()).isFalse()
-            assertThat(board.showWinner()).isEqualTo("Black is the winner")
+            assertThat(board.hasNoLooser).isFalse()
+            assertThat(board.winner).isEqualTo("Black is the winner")
         }
 
         @Test
@@ -301,8 +301,8 @@ class BoardTest {
                     .setStone(Black, 2).setStone(Black, 9)
                     .setStone(White, 4).setStone(White, 10).setStone(White, 14).setStone(White, 21)
 
-            assertThat(board.noLooser()).isFalse()
-            assertThat(board.showWinner()).isEqualTo("White is the winner")
+            assertThat(board.hasNoLooser).isFalse()
+            assertThat(board.winner).isEqualTo("White is the winner")
         }
     }
 
@@ -310,7 +310,7 @@ class BoardTest {
     inner class PrintBoard {
         @Test
         fun `draw empty board`() {
-            val output = emptyBoard.printBoard()
+            val output = emptyBoard.printedBoard
             val expected = """
                 O--------O--------O
                 |        |        |
@@ -338,7 +338,7 @@ class BoardTest {
                 .setStone(White, 3)
                 .setStone(White, 4)
                 .setStone(Black, 5)
-            val output = board.printBoard()
+            val output = board.printedBoard
             val expected = """
                 O--------O--------O
                 |        |        |
@@ -364,9 +364,9 @@ class BoardTest {
     @Test
     fun `board change player`() {
         assertThat(emptyBoard.activePlayerColor).isEqualTo(White)
-        val board1 = emptyBoard.switchPlayer()
+        val board1 = emptyBoard.withSwitchedPlayer
         assertThat(board1.activePlayerColor).isEqualTo(Black)
-        val board2 = board1.switchPlayer()
+        val board2 = board1.withSwitchedPlayer
         assertThat(board2.activePlayerColor).isEqualTo(White)
     }
 

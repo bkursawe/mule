@@ -42,7 +42,7 @@ class AlphaBetaStrategy : ChoosingStrategy {
         var maxEval = Double.NEGATIVE_INFINITY
         var currentAlpha = alpha
         for (move in board.legalMoves) {
-            val (_, eval) = alphaBeta(board.draw(move).switchPlayer(), depth - 1, currentAlpha, beta)
+            val (_, eval) = alphaBeta(board.draw(move).withSwitchedPlayer, depth - 1, currentAlpha, beta)
             if (eval > maxEval || bestMove == NoMove) {
                 maxEval = eval
                 bestMove = move
@@ -65,7 +65,7 @@ class AlphaBetaStrategy : ChoosingStrategy {
         var minEval = Double.POSITIVE_INFINITY
         var currentBeta = beta
         for (move in board.legalMoves) {
-            val (_, eval) = alphaBeta(board.draw(move).switchPlayer(), depth - 1, alpha, currentBeta)
+            val (_, eval) = alphaBeta(board.draw(move).withSwitchedPlayer, depth - 1, alpha, currentBeta)
             if (eval < minEval || bestMove == NoMove) {
                 minEval = eval
                 bestMove = move

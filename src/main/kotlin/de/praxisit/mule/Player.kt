@@ -76,7 +76,7 @@ class Player internal constructor(
     }
 
     private fun settingMoves(board: Board): List<Move> {
-        return board.emptyFieldsIndices().map { SetMove(color, it) }
+        return board.emptyFieldsIndices.map { SetMove(color, it) }
     }
 
     private fun pushingMoves(board: Board): List<Move> = board.fieldsIndicesWithColor(color).flatMap { fromField ->
@@ -84,7 +84,7 @@ class Player internal constructor(
     }
 
     private fun jumpMoves(board: Board): List<Move> = board.fieldsIndicesWithColor(color).flatMap { fromField ->
-        board.emptyFieldsIndices().map { emptyField -> JumpMove(color, fromField, emptyField) }
+        board.emptyFieldsIndices.map { emptyField -> JumpMove(color, fromField, emptyField) }
     }
 
 }
