@@ -129,6 +129,8 @@ class Board(
              ${f(21)}--------${f(22)}--------${f(23)}
              ${if (activePlayer == white) "*" else " "} White: stones = ${white.stones} phase = ${white.phase}
              ${if (activePlayer == black) "*" else " "} Black: stones = ${black.stones} phase = ${black.phase}
+             Evaluation: $evaluation
+             
         """.trimIndent()
     }
 
@@ -174,7 +176,35 @@ class Board(
 
     fun stonesOnBoard(color: Color) = fields.count { field -> field == color }
 
+    fun weightedStonesOnBoard(color: Color) = WHEIGHTED_POSITIONS.filter { fields[it] == color }.sum()
+
     companion object {
+        val WHEIGHTED_POSITIONS = arrayOf(
+            2,
+            3,
+            2,
+            2,
+            4,
+            2,
+            2,
+            3,
+            2,
+            3,
+            4,
+            3,
+            3,
+            4,
+            3,
+            2,
+            3,
+            2,
+            2,
+            4,
+            2,
+            2,
+            3,
+            2
+        )
         val MULES = arrayOf(
             listOf(0, 1, 2),
             listOf(3, 4, 5),
