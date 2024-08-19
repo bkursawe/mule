@@ -174,37 +174,9 @@ class Board(
 
     val hasNoLooser get() = white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
 
-    fun stonesOnBoard(color: Color) = fields.count { field -> field == color }
-
-    fun weightedStonesOnBoard(color: Color) = WHEIGHTED_POSITIONS.filter { fields[it] == color }.sum()
+    fun weightedStonesOnBoard(color: Color) = WEIGHTED_POSITIONS.filter { fields[it] == color }.sum()
 
     companion object {
-        val WHEIGHTED_POSITIONS = arrayOf(
-            2,
-            3,
-            2,
-            2,
-            4,
-            2,
-            2,
-            3,
-            2,
-            3,
-            4,
-            3,
-            3,
-            4,
-            3,
-            2,
-            3,
-            2,
-            2,
-            4,
-            2,
-            2,
-            3,
-            2
-        )
         val MULES = arrayOf(
             listOf(0, 1, 2),
             listOf(3, 4, 5),
@@ -255,5 +227,7 @@ class Board(
             listOf(19, 21, 23),
             listOf(14, 22)
         ).map { list -> list.map { field -> field.asFieldIndex } }.toTypedArray()
+
+        val WEIGHTED_POSITIONS = CONNECTIONS.map { it.size }
     }
 }
