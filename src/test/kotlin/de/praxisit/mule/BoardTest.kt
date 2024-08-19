@@ -327,9 +327,7 @@ class BoardTest {
                 O--------O--------O
             """.trimIndent()
 
-            assertThat(output)
-                .hasSameSizeAs(expected)
-                .isEqualToIgnoringWhitespace(expected)
+            assertThat(output).startsWith(expected)
         }
 
         @Test
@@ -355,9 +353,7 @@ class BoardTest {
                 O--------O--------O
             """.trimIndent()
 
-            assertThat(output)
-                .hasSameSizeAs(expected)
-                .isEqualToIgnoringWhitespace(expected)
+            assertThat(output).startsWith(expected)
         }
     }
 

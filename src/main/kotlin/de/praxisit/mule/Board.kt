@@ -174,7 +174,8 @@ class Board(
 
     val hasNoLooser get() = white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
 
-    fun weightedStonesOnBoard(color: Color) = WEIGHTED_POSITIONS.filter { fields[it] == color }.sum()
+    fun weightedStonesOnBoard(color: Color) =
+        FieldIndex.INDEXES.map { it.index }.filter { fields[it] == color }.map { WEIGHTED_POSITIONS[it] }.sum()
 
     companion object {
         val MULES = arrayOf(

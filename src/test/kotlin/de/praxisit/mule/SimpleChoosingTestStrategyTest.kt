@@ -22,7 +22,7 @@ class SimpleChoosingTestStrategyTest {
         val move = player.chooseMove(board)
 
         assertThat(move).isInstanceOf(SetMove::class.java)
-        assertThat(move!!.toField.index).isEqualTo(5)
+        assertThat(move.toField.index).isEqualTo(5)
     }
 
     @Test
@@ -42,7 +42,7 @@ class SimpleChoosingTestStrategyTest {
         val move = board.activePlayer.chooseMove(board)
 
         assertThat(move).isInstanceOf(PushMove::class.java)
-        assertThat(move!!.toField.index).isEqualTo(10)
+        assertThat(move.toField.index).isEqualTo(10)
         assertThat((move as? PushMove)?.fromField?.index).isEqualTo(3)
     }
 
