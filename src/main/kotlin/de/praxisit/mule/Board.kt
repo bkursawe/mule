@@ -19,9 +19,9 @@ import de.praxisit.mule.Phase.LOOSE
 //  21-------22-------23
 //
 class Board(
-    private val fields: Array<Field> = Array(24) { _ -> Empty },
-    private val white: Player = Player(White),
-    private val black: Player = Player(Black),
+    val fields: Array<Field> = Array(24) { _ -> Empty },
+    val white: Player = Player(White),
+    val black: Player = Player(Black),
     internal val activePlayerColor: Color = White,
     private val history: List<Board> = emptyList()
 ) {
@@ -106,33 +106,7 @@ class Board(
 
     val isRepeated: Boolean by lazy { history.count { it == this } >= 2 }
 
-    private fun f(index: Int) = when (fields[index]) {
-        Empty -> "O"
-        White -> "W"
-        Black -> "B"
-    }
 
-    val printedBoard: String by lazy {
-        """
-             ${f(0)}--------${f(1)}--------${f(2)}
-             |        |        |
-             |  ${f(3)}-----${f(4)}-----${f(5)}  |
-             |  |     |     |  |
-             |  |  ${f(6)}--${f(7)}--${f(8)}  |  |
-             |  |  |     |  |  |
-             ${f(9)}--${f(10)}--${f(11)}     ${f(12)}--${f(13)}--${f(14)}
-             |  |  |     |  |  |
-             |  |  ${f(15)}--${f(16)}--${f(17)}  |  |
-             |  |     |     |  |
-             |  ${f(18)}-----${f(19)}-----${f(20)}  |
-             |        |        |
-             ${f(21)}--------${f(22)}--------${f(23)}
-             ${if (activePlayer == white) "*" else " "} White: stones = ${white.stones} phase = ${white.phase}
-             ${if (activePlayer == black) "*" else " "} Black: stones = ${black.stones} phase = ${black.phase}
-             Evaluation: $evaluation
-             
-        """.trimIndent()
-    }
 
     fun capturablePieces(color: Color) = fieldsIndicesWithColor(color).filter { !willCloseMule(it, color) }.toSet()
 
@@ -175,7 +149,7 @@ class Board(
     val hasNoLooser get() = white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
 
     fun weightedStonesOnBoard(color: Color) =
-        FieldIndex.INDEXES.map { it.index }.filter { fields[it] == color }.map { WEIGHTED_POSITIONS[it] }.sum()
+        FieldIndex.INDEXES.map { it.index }.filter { fields[it] == color }.sumOf { WEIGHTED_POSITIONS[it] }
 
     companion object {
         val MULES = arrayOf(

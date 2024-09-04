@@ -310,7 +310,7 @@ class BoardTest {
     inner class PrintBoard {
         @Test
         fun `draw empty board`() {
-            val output = emptyBoard.printedBoard
+            val output = Display.printedBoard(Board())
             val expected = """
                 O--------O--------O
                 |        |        |
@@ -336,7 +336,7 @@ class BoardTest {
                 .setStone(White, 3)
                 .setStone(White, 4)
                 .setStone(Black, 5)
-            val output = board.printedBoard
+            val output = Display.printedBoard(board)
             val expected = """
                 O--------O--------O
                 |        |        |
