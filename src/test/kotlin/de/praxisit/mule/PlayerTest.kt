@@ -1,7 +1,7 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.Phase.JUMPING
-import de.praxisit.mule.Phase.LOOSE
+import de.praxisit.mule.Phase.LOST
 import de.praxisit.mule.Phase.MOVING
 import de.praxisit.mule.Phase.SETTING
 import org.assertj.core.api.Assertions.assertThat
@@ -104,6 +104,6 @@ class PlayerTest {
             player = player.setStone()
         }
         assertThat(player.phase).isEqualTo(JUMPING)
-        assertThat(player.loseStone().phase).isEqualTo(LOOSE)
+        assertThat(player.loseStone().phase).isEqualTo(LOST)
     }
 }

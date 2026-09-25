@@ -11,14 +11,14 @@ data class Player(val color: Color, val stones: Int = STONES, val stonesSet: Int
 
     val phase: Phase
         get() = when {
-            stones < 3         -> LOOSE
+            stones < 3         -> LOST
             stonesSet < STONES -> SETTING
             stones == 3        -> JUMPING
             else               -> MOVING
         }
 
     fun loseStone(): Player {
-        check(phase != LOOSE)
+        check(phase != LOST)
 
         return copy(stones = stones - 1)
     }

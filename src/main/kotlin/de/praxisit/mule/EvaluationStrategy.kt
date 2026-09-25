@@ -13,10 +13,10 @@ class SimpleEvaluationStrategy : EvaluationStrategy {
     override fun evaluate(position: Position): Double {
         val board = position.board
         val pointsForWhite = board.weightedStonesOnBoard(White) +
-                5 * board.imcompleteMillCount(White) +
+                5 * board.openMuleCount(White) +
                 10 * board.muleCount(White)
         val pointsForBlack = board.weightedStonesOnBoard(Black) +
-                5 * board.imcompleteMillCount(Black) +
+                5 * board.openMuleCount(Black) +
                 10 * board.muleCount(Black)
 
         return (pointsForWhite - pointsForBlack).toDouble()
@@ -61,7 +61,7 @@ class ExtendedEvaluationStrategy(
             }
             closable
         }
-        LOOSE            -> 0
+        LOST             -> 0
     }
 
     private fun mobility(board: Board, color: Color): Int {

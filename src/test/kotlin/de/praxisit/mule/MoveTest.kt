@@ -75,6 +75,17 @@ class MoveTest {
         assertThat(createJumpMove(White, 1, 2).hashCode()).isNotEqualTo(0)
     }
 
+    @Test
+    fun `moves from different fields differ`() {
+        assertThat(createPushMove(White, 1, 2)).isNotEqualTo(createPushMove(White, 14, 2))
+        assertThat(createPushMove(White, 1, 2).hashCode()).isNotEqualTo(createPushMove(White, 14, 2).hashCode())
+    }
+
+    @Test
+    fun `an illegal move is an illegal argument`() {
+        assertThatThrownBy { createSetMove(White, 1, 1) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
     @Nested
     inner class AddCaptureField {
         @Test

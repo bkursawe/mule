@@ -3,7 +3,7 @@ package de.praxisit.mule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class SimpleChoosingTestStrategyTest {
+class SimpleChoosingStrategyTest {
     class TestStrategy(private val field1: Int, private val emptyField: Int? = null) : EvaluationStrategy {
         override fun evaluate(position: Position) =
             when {

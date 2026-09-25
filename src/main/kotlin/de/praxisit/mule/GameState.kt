@@ -1,7 +1,7 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.GameResult.*
-import de.praxisit.mule.Phase.LOOSE
+import de.praxisit.mule.Phase.LOST
 import kotlin.LazyThreadSafetyMode.NONE
 
 /**
@@ -71,8 +71,8 @@ class GameState private constructor(
 
     val result: GameResult by lazy(NONE) {
         when {
-            position.white.phase == LOOSE -> Win(Black)
-            position.black.phase == LOOSE -> Win(White)
+            position.white.phase == LOST  -> Win(Black)
+            position.black.phase == LOST  -> Win(White)
             legalMoves.isEmpty()          -> Win(activeColor.opposite)
             isRemis                       -> Remis
             else                          -> Ongoing

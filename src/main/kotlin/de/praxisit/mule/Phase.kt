@@ -4,5 +4,5 @@ enum class Phase {
     SETTING,
     MOVING,
     JUMPING,
-    LOOSE
+    LOST
 }

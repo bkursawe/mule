@@ -13,7 +13,7 @@ object Rules {
             SETTING -> settingMoves(board, color)
             MOVING  -> pushingMoves(board, color)
             JUMPING -> jumpMoves(board, color)
-            LOOSE   -> emptyList()
+            LOST    -> emptyList()
         }
         return extendMovesByCaptures(moves, board, color)
     }
@@ -24,7 +24,7 @@ object Rules {
             is SetMove           -> position.board.setStone(move.color, move.toField)
             is MoveWithFromField -> position.board.moveStone(move.fromField, move.toField)
         }
-        if (move.capturedField != null) board = board.removeStone(move.capturedField)
+        move.capturedField?.let { board = board.removeStone(it) }
 
         val mover = position.activePlayer
         val opponent = position.player(mover.color.opposite)

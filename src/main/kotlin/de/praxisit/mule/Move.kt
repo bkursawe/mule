@@ -2,89 +2,91 @@ package de.praxisit.mule
 
 import de.praxisit.mule.Board.Companion.CONNECTIONS
 
-@Suppress("kotlin:S1192")
-sealed class Move(val color: Color, val toField: FieldIndex, val capturedField: FieldIndex?) {
+sealed class Move {
+    abstract val color: Color
+    abstract val toField: FieldIndex
+    abstract val capturedField: FieldIndex?
+
     abstract fun addCaptureField(field: FieldIndex): Move
 
     val isCaptureMove: Boolean
         get() = capturedField != null
+
+    protected val capturedFieldText: String
+        get() = capturedField?.let { ", ${it.index}" } ?: ""
 }
 
 private const val CAPTURE_FIELD_EQUAL_TO_FIELD = "field == toField"
+private const val CAPTURE_FIELD_EQUAL_TO_FROM_FIELD = "field == fromField"
 
-class SetMove(color: Color, toField: FieldIndex, capturedField: FieldIndex? = null) :
-    Move(color, toField, capturedField) {
+data class SetMove(
+    override val color: Color,
+    override val toField: FieldIndex,
+    override val capturedField: FieldIndex? = null
+) : Move() {
     init {
-        if (toField == capturedField)
-            throw IllegalMoveException(this, "toField is captured")
+        if (toField == capturedField) throw IllegalMoveException(this, "toField is captured")
     }
 
     override fun addCaptureField(field: FieldIndex): SetMove {
         if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
-        return SetMove(color, toField, field)
+        return copy(capturedField = field)
     }
 
-    override fun toString() = "SetMove($color, ${toField.index}${capturedField?.let { ", ${it.index}" } ?: ""})"
-    override fun equals(other: Any?): Boolean {
-        val otherMove = other as? SetMove ?: return false
-        return color == otherMove.color && toField == otherMove.toField && capturedField == otherMove.capturedField
-    }
-
-    override fun hashCode() = color.hashCode() + toField.hashCode() + capturedField.hashCode()
+    override fun toString() = "SetMove($color, ${toField.index}$capturedFieldText)"
 }
 
-@Suppress("LeakingThis")
-sealed class MoveWithFromField(
-    color: Color,
-    val fromField: FieldIndex,
-    toField: FieldIndex,
-    capturedField: FieldIndex? = null
-) :
-    Move(color, toField, capturedField) {
-    init {
-        if (fromField == toField || toField == capturedField || fromField == capturedField)
+sealed class MoveWithFromField : Move() {
+    abstract val fromField: FieldIndex
+
+    // Called by the init blocks of the subclasses: the properties are not initialised before
+    protected fun requireDistinctFields() {
+        if (fromField == toField || toField == capturedField || fromField == capturedField) {
             throw IllegalMoveException(this, "duplicate fields")
+        }
+    }
+
+    protected fun requireValidCaptureField(field: FieldIndex) {
+        if (field == fromField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FROM_FIELD)
+        if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
     }
 }
 
-class PushMove(color: Color, fromField: FieldIndex, toField: FieldIndex, capturedField: FieldIndex? = null) :
-    MoveWithFromField(color, fromField, toField, capturedField) {
+data class PushMove(
+    override val color: Color,
+    override val fromField: FieldIndex,
+    override val toField: FieldIndex,
+    override val capturedField: FieldIndex? = null
+) : MoveWithFromField() {
     init {
+        requireDistinctFields()
         if (toField !in CONNECTIONS[fromField.index]) {
             throw IllegalMoveException(this, "toField is not connected to fromField")
         }
     }
 
     override fun addCaptureField(field: FieldIndex): PushMove {
-        if (field == fromField) throw IllegalMoveException(this, "field == fromField")
-        if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
-        return PushMove(color, fromField, toField, field)
+        requireValidCaptureField(field)
+        return copy(capturedField = field)
     }
 
-    override fun toString() =
-        "PushMove($color, ${fromField.index} -> ${toField.index}${capturedField?.let { ", ${it.index}" } ?: ""})"
-    override fun equals(other: Any?): Boolean {
-        val otherMove = other as? PushMove ?: return false
-        return color == otherMove.color && fromField == otherMove.fromField && toField == otherMove.toField && capturedField == otherMove.capturedField
-    }
-
-    override fun hashCode() = color.hashCode() + toField.hashCode() + capturedField.hashCode()
+    override fun toString() = "PushMove($color, ${fromField.index} -> ${toField.index}$capturedFieldText)"
 }
 
-class JumpMove(color: Color, fromField: FieldIndex, toField: FieldIndex, capturedField: FieldIndex? = null) :
-    MoveWithFromField(color, fromField, toField, capturedField) {
+data class JumpMove(
+    override val color: Color,
+    override val fromField: FieldIndex,
+    override val toField: FieldIndex,
+    override val capturedField: FieldIndex? = null
+) : MoveWithFromField() {
+    init {
+        requireDistinctFields()
+    }
+
     override fun addCaptureField(field: FieldIndex): JumpMove {
-        if (field == fromField) throw IllegalMoveException(this, "field == fromField")
-        if (field == toField) throw IllegalMoveException(this, CAPTURE_FIELD_EQUAL_TO_FIELD)
-        return JumpMove(color, fromField, toField, field)
+        requireValidCaptureField(field)
+        return copy(capturedField = field)
     }
 
-    override fun toString() =
-        "JumpMove($color, ${fromField.index} -> ${toField.index}${capturedField?.let { ", ${it.index}" } ?: ""})"
-    override fun equals(other: Any?): Boolean {
-        val otherMove = other as? JumpMove ?: return false
-        return color == otherMove.color && fromField == otherMove.fromField && toField == otherMove.toField && capturedField == otherMove.capturedField
-    }
-
-    override fun hashCode() = color.hashCode() + toField.hashCode() + capturedField.hashCode()
+    override fun toString() = "JumpMove($color, ${fromField.index} -> ${toField.index}$capturedFieldText)"
 }

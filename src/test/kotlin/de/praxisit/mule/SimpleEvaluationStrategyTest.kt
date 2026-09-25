@@ -3,7 +3,7 @@ package de.praxisit.mule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class SimpleEvaluationTestStrategyTest {
+class SimpleEvaluationStrategyTest {
     private val strategy = SimpleEvaluationStrategy()
 
     @Test

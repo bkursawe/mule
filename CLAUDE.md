@@ -39,7 +39,7 @@ Vier Schichten, Abhängigkeiten nur von oben nach unten:
 3. **Regeln**: `Rules` erzeugt die legalen Züge und wendet sie an. `GameState` = `Position` + Historie: `play(move)` prüft die Legalität und wechselt den Spieler, `result` liefert `GameResult` (`Ongoing`, `Remis`, `Win`). Remis bei dreifacher Wiederholung oder nach 50 Zügen ohne Schlagen (jeder Spielerzug zählt einzeln).
 4. **Modell** (unveränderlich):
    - `Board`: nur die Steine, als 24-Bit-Maske pro Farbe (Bit i = Feld i); `MULES`, `CONNECTIONS`, `NEIGHBORS`, `WEIGHTED_POSITIONS` im Companion.
-   - `Player`: `stones` zählt alle eigenen Steine (Brett + Hand). Die Phase `SETTING → MOVING → JUMPING → LOOSE` wird abgeleitet: Bei 3 Steinen wird gesprungen, bei 2 ist das Spiel verloren.
+   - `Player`: `stones` zählt alle eigenen Steine (Brett + Hand). Die Phase `SETTING → MOVING → JUMPING → LOST` wird abgeleitet: Bei 3 Steinen wird gesprungen, bei 2 ist das Spiel verloren.
    - `Move`: sealed (`SetMove`, `PushMove`, `JumpMove`), optional mit `capturedField`.
    - `Position`: Brett, beide Spieler und wer am Zug ist.
 
