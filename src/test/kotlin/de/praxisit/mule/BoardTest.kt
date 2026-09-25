@@ -1,5 +1,7 @@
 package de.praxisit.mule
 
+import de.praxisit.mule.AlphaBetaStrategyTest.Companion.createBoard
+import de.praxisit.mule.AlphaBetaStrategyTest.Companion.playBackAndForth
 import de.praxisit.mule.Board.Companion.COMPLETABLE_MULES
 import de.praxisit.mule.Board.Companion.MULES
 import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
@@ -249,6 +251,47 @@ class BoardTest {
             assertThat(board.capturablePieces(White).map { it.index }).containsExactlyInAnyOrder(1, 2)
             assertThat(board.capturablePieces(Black).map { it.index }).containsExactlyInAnyOrder(6)
         }
+
+        @Test
+        fun `all pieces are capturable if every piece is in a mule`() {
+            val board = emptyBoard.setStones(Black, 3, 4, 5)
+
+            assertThat(board.capturablePieces(Black).map { it.index }).containsExactlyInAnyOrder(3, 4, 5)
+        }
+    }
+
+    @Test
+    fun `weighted stones count the connections of each occupied field`() {
+        val board = emptyBoard.setStones(White, 0, 4).setStone(Black, 1)
+
+        assertThat(board.weightedStonesOnBoard(White)).isEqualTo(6)
+        assertThat(board.weightedStonesOnBoard(Black)).isEqualTo(3)
+    }
+
+    @Nested
+    inner class Repetition {
+        @Test
+        fun `boards with the same position are equal`() {
+            val board = emptyBoard.setStone(White, 0)
+
+            assertThat(board).isEqualTo(Board().setStone(White, 0))
+            assertThat(board.hashCode()).isEqualTo(Board().setStone(White, 0).hashCode())
+            assertThat(board).isNotEqualTo(board.withSwitchedPlayer)
+            assertThat(board).isNotEqualTo(board.setStone(Black, 1))
+        }
+
+        @Test
+        fun `the third occurrence of a position is a remis`() {
+            val start = createBoard(listOf(0, 4, 9, 13), 0, listOf(10, 12, 20, 23), 0, White)
+
+            val second = start.playBackAndForth()
+            val third = second.playBackAndForth()
+
+            assertThat(second).isEqualTo(start)
+            assertThat(second.isRepeated).isFalse()
+            assertThat(third.isRepeated).isTrue()
+            assertThat(third.winner).isEqualTo("It's a remis")
+        }
     }
 
     @Nested
@@ -282,8 +325,8 @@ class BoardTest {
 
         @Test
         fun `white has no moves`() {
-            val white = Player(White, 4, 9, Phase.MOVING)
-            val black = Player(Black, 4, 9, Phase.MOVING)
+            val white = Player(White, 4, 9)
+            val black = Player(Black, 4, 9)
             val board = Board(white = white, black = black).setStone(White, 0).setStone(White, 1).setStone(White, 2)
                 .setStone(White, 9)
                 .setStone(Black, 4).setStone(Black, 10).setStone(Black, 14).setStone(Black, 21)
@@ -294,8 +337,8 @@ class BoardTest {
 
         @Test
         fun `black has no moves`() {
-            val white = Player(White, 4, 9, Phase.MOVING)
-            val black = Player(Black, 4, 9, Phase.MOVING)
+            val white = Player(White, 4, 9)
+            val black = Player(Black, 4, 9)
             val board =
                 Board(white = white, black = black, activePlayerColor = Black).setStone(Black, 0).setStone(Black, 1)
                     .setStone(Black, 2).setStone(Black, 9)
@@ -325,6 +368,10 @@ class BoardTest {
                 |  O-----O-----O  |
                 |        |        |
                 O--------O--------O
+                * White: stones = 9 phase = SETTING
+                  Black: stones = 9 phase = SETTING
+                Evaluation: 0.0
+
             """.trimIndent()
 
             assertThat(output)
@@ -353,6 +400,10 @@ class BoardTest {
                 |  O-----O-----O  |
                 |        |        |
                 O--------O--------O
+                * White: stones = 9 phase = SETTING
+                  Black: stones = 9 phase = SETTING
+                Evaluation: 4.0
+
             """.trimIndent()
 
             assertThat(output)

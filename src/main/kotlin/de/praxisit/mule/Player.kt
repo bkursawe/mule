@@ -4,26 +4,35 @@ import de.praxisit.mule.Phase.*
 import kotlin.Double.Companion.NEGATIVE_INFINITY
 import kotlin.Double.Companion.POSITIVE_INFINITY
 
+/**
+ * [stones] counts all stones the player still owns, on the board and in hand.
+ */
 class Player internal constructor(
     val color: Color,
     val stones: Int,
     val stonesSet: Int,
-    val phase: Phase,
     private val evaluationStrategy: EvaluationStrategy = SimpleEvaluationStrategy(),
     private val choosingStrategy: ChoosingStrategy = AlphaBetaStrategy()
 ) : EvaluationStrategy by evaluationStrategy, ChoosingStrategy by choosingStrategy {
     val remainingStones: Int
         get() = 9 - stonesSet
 
+    val phase: Phase
+        get() = when {
+            stones < 3    -> LOOSE
+            stonesSet < 9 -> SETTING
+            stones == 3   -> JUMPING
+            else          -> MOVING
+        }
+
     val worstEvaluation = if (color == White) NEGATIVE_INFINITY else POSITIVE_INFINITY
 
-    constructor(color: Color) : this(color, 9, 0, SETTING)
+    constructor(color: Color) : this(color, 9, 0)
 
     constructor(color: Color, evaluationStrategy: EvaluationStrategy) : this(
         color,
         9,
         0,
-        SETTING,
         evaluationStrategy,
         SimpleChoosingStrategy()
     )
@@ -32,24 +41,20 @@ class Player internal constructor(
         color: Color = this.color,
         stones: Int = this.stones,
         stonesSet: Int = this.stonesSet,
-        phase: Phase = this.phase,
         evaluationStrategy: EvaluationStrategy = this.evaluationStrategy,
         choosingStrategy: ChoosingStrategy = this.choosingStrategy
-    ) = Player(color, stones, stonesSet, phase, evaluationStrategy, choosingStrategy)
+    ) = Player(color, stones, stonesSet, evaluationStrategy, choosingStrategy)
 
     fun loseStone(): Player {
-        return when {
-            stones > 4  -> copy(stones = stones - 1)
-            stones == 4 -> copy(stones = 3, phase = JUMPING)
-            else        -> copy(stones = 2, phase = LOOSE)
-        }
+        check(phase != LOOSE)
+
+        return copy(stones = stones - 1)
     }
 
     fun setStone(): Player {
-        check(stonesSet != 9)
         check(phase == SETTING)
 
-        return copy(stonesSet = stonesSet + 1, phase = if (stonesSet == 8) MOVING else SETTING)
+        return copy(stonesSet = stonesSet + 1)
     }
 
     fun legalMoves(board: Board): List<Move> {
@@ -70,8 +75,11 @@ class Player internal constructor(
                 is NoMove -> throw IllegalMoveException(NoMove, "Cannot move")
             }
         }
+        val capturablePieces = board.capturablePieces(color.opposite)
+        if (capturablePieces.isEmpty()) return moves
+
         return captureMoves.flatMap { move ->
-            board.capturablePieces(color.opposite).map { captureField -> move.addCaptureField(captureField) }
+            capturablePieces.map { captureField -> move.addCaptureField(captureField) }
         } + normalMoves
     }
 

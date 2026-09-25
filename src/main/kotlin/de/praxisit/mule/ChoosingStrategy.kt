@@ -1,36 +1,42 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.Phase.LOOSE
+import kotlin.Double.Companion.NEGATIVE_INFINITY
+import kotlin.Double.Companion.POSITIVE_INFINITY
 
 fun interface ChoosingStrategy {
     fun chooseMove(board: Board): Move
 }
 
 class SimpleChoosingStrategy : ChoosingStrategy {
-    override fun chooseMove(board: Board) = board
-        .legalMoves
-        .maxByOrNull { move -> board.draw(move).evaluation } ?: NoMove
+    override fun chooseMove(board: Board): Move {
+        val evaluation = { move: Move -> board.draw(move).evaluation }
+        return if (board.activePlayerColor == White) {
+            board.legalMoves.maxByOrNull(evaluation)
+        } else {
+            board.legalMoves.minByOrNull(evaluation)
+        } ?: NoMove
+    }
 }
 
-class AlphaBetaStrategy : ChoosingStrategy {
-    override fun chooseMove(board: Board) = alphaBeta(board, 5).first
+class AlphaBetaStrategy(private val depth: Int = 5) : ChoosingStrategy {
+    // The root is searched without the terminal checks, so a legal move is returned whenever one exists
+    override fun chooseMove(board: Board) = bestMove(board, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY).first
 
-    private fun alphaBeta(
-        board: Board,
-        depth: Int,
-        alpha: Double = Double.MIN_VALUE,
-        beta: Double = Double.MAX_VALUE
-    ): Pair<Move, Double> {
-        if (depth == 0) return Pair(NoMove, board.evaluation)
+    private fun alphaBeta(board: Board, depth: Int, alpha: Double, beta: Double): Pair<Move, Double> {
         if (board.activePlayer.phase == LOOSE) return Pair(NoMove, board.activePlayer.worstEvaluation)
         if (board.isRepeated) return Pair(NoMove, 0.0)
+        if (depth == 0) return Pair(NoMove, board.evaluation)
 
-        return if (board.activePlayer.color == White) {
+        return bestMove(board, depth, alpha, beta)
+    }
+
+    private fun bestMove(board: Board, depth: Int, alpha: Double, beta: Double): Pair<Move, Double> =
+        if (board.activePlayer.color == White) {
             bestMoveForWhite(board, depth, alpha, beta)
         } else {
             bestMoveForBlack(board, depth, alpha, beta)
         }
-    }
 
     private fun bestMoveForWhite(
         board: Board,

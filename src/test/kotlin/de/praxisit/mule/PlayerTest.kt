@@ -2,7 +2,9 @@ package de.praxisit.mule
 
 import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import de.praxisit.mule.Phase.JUMPING
+import de.praxisit.mule.Phase.LOOSE
 import de.praxisit.mule.Phase.MOVING
+import de.praxisit.mule.Phase.SETTING
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -89,6 +91,23 @@ class PlayerTest {
         assertThat(player.phase).isEqualTo(JUMPING)
     }
 
+    @Test
+    fun `lose stones while setting`() {
+        var player = Player(White)
+        repeat(6) {
+            player = player.setStone()
+        }
+        repeat(6) {
+            player = player.loseStone()
+            assertThat(player.phase).isEqualTo(SETTING)
+        }
+        repeat(3) {
+            player = player.setStone()
+        }
+        assertThat(player.phase).isEqualTo(JUMPING)
+        assertThat(player.loseStone().phase).isEqualTo(LOOSE)
+    }
+
     @Nested
     inner class LegalMoves {
         @Nested
@@ -134,7 +153,7 @@ class PlayerTest {
         inner class JumpingMoves {
             @Test
             fun `a player with 3 stones on an otherwise empty board`() {
-                val white = Player(White).loseStone().loseStone().loseStone().loseStone().loseStone().loseStone()
+                val white = Player(White, stones = 3, stonesSet = 9)
                 val board = Board().setStone(6, White).setStone(7, White).setStone(8, White)
 
                 val moves = white.legalMoves(board)
@@ -148,7 +167,7 @@ class PlayerTest {
 
             @Test
             fun `a player with 3 stones on a board with other stones`() {
-                val white = Player(White).loseStone().loseStone().loseStone().loseStone().loseStone().loseStone()
+                val white = Player(White, stones = 3, stonesSet = 9)
                 val board = Board().setStone(6, White).setStone(7, White).setStone(8, White)
                     .setStone(21, Black).setStone(22, Black).setStone(23, Black)
 
@@ -159,6 +178,28 @@ class PlayerTest {
                     .hasOnlyElementsOfType(JumpMove::class.java)
                     .extracting(Move::color)
                     .containsOnly(White)
+            }
+        }
+
+        @Nested
+        inner class CaptureMoves {
+            @Test
+            fun `capture from a mule if all opponent stones are in mules`() {
+                val board = Board().setStone(0, White).setStone(1, White)
+                    .setStone(3, Black).setStone(4, Black).setStone(5, Black)
+
+                val moves = Player(White).legalMoves(board).filter { it.toField.index == 2 }
+
+                assertThat(moves.map { it.capturedField?.index }).containsExactlyInAnyOrder(3, 4, 5)
+            }
+
+            @Test
+            fun `close a mule without capture if the opponent has no stones on the board`() {
+                val board = Board().setStone(0, White).setStone(1, White)
+
+                val moves = Player(White).legalMoves(board).filter { it.toField.index == 2 }
+
+                assertThat(moves).containsExactly(SetMove(White, 2.asFieldIndex))
             }
         }
     }

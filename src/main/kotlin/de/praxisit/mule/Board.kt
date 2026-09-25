@@ -2,6 +2,7 @@ package de.praxisit.mule
 
 import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import de.praxisit.mule.Phase.LOOSE
+import java.util.Objects
 
 //
 //   0--------1--------2
@@ -106,6 +107,29 @@ class Board(
 
     val isRepeated: Boolean by lazy { history.count { it == this } >= 2 }
 
+    // Boards are equal if they have the same position, the history is ignored
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Board || hashCode() != other.hashCode()) return false
+        return activePlayerColor == other.activePlayerColor &&
+                white.stones == other.white.stones && white.stonesSet == other.white.stonesSet &&
+                black.stones == other.black.stones && black.stonesSet == other.black.stonesSet &&
+                fields.contentEquals(other.fields)
+    }
+
+    override fun hashCode() = positionHash
+
+    private val positionHash: Int by lazy {
+        Objects.hash(
+            activePlayerColor,
+            white.stones,
+            white.stonesSet,
+            black.stones,
+            black.stonesSet,
+            fields.contentHashCode()
+        )
+    }
+
     private fun f(index: Int) = when (fields[index]) {
         Empty -> "O"
         White -> "W"
@@ -134,7 +158,11 @@ class Board(
         """.trimIndent()
     }
 
-    fun capturablePieces(color: Color) = fieldsIndicesWithColor(color).filter { !willCloseMule(it, color) }.toSet()
+    // Stones in a mule may only be captured if every stone is in a mule
+    fun capturablePieces(color: Color): Set<FieldIndex> {
+        val stones = fieldsIndicesWithColor(color)
+        return stones.filter { !willCloseMule(it, color) }.toSet().ifEmpty { stones }
+    }
 
     fun willCloseMule(field: FieldIndex, color: Color): Boolean {
         val mules = COMPLETABLE_MULES[field.index]
@@ -174,7 +202,7 @@ class Board(
 
     val hasNoLooser get() = white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
 
-    fun weightedStonesOnBoard(color: Color) = WEIGHTED_POSITIONS.filter { fields[it] == color }.sum()
+    fun weightedStonesOnBoard(color: Color) = fields.indices.filter { fields[it] == color }.sumOf { WEIGHTED_POSITIONS[it] }
 
     companion object {
         val MULES = arrayOf(
@@ -196,8 +224,8 @@ class Board(
             listOf(2, 14, 23)
         ).map { list -> list.map { field -> field.asFieldIndex } }
 
-        val COMPLETABLE_MULES: List<List<Pair<FieldIndex, FieldIndex>>>
-            get() = FieldIndex.INDEXES.map { fieldIndex ->
+        val COMPLETABLE_MULES: List<List<Pair<FieldIndex, FieldIndex>>> =
+            FieldIndex.INDEXES.map { fieldIndex ->
                 MULES.filter { mule -> fieldIndex in mule }.map { it - fieldIndex }.map { Pair(it.first(), it.last()) }
             }
 

@@ -46,5 +46,18 @@ class SimpleChoosingTestStrategyTest {
         assertThat((move as? PushMove)?.fromField?.index).isEqualTo(3)
     }
 
+    @Test
+    fun `black chooses the move with the lowest evaluation`() {
+        val black = Player(Black, SimpleEvaluationStrategy())
+        val board = Board(black = black)
+            .setStone(White, 0.asFieldIndex)
+            .setStone(White, 1.asFieldIndex)
+            .withSwitchedPlayer
+
+        val move = black.chooseMove(board)
+
+        assertThat(move.toField.index).isEqualTo(2)
+    }
+
     private fun createSetMove(color: Color, field: Int) = SetMove(color, field.asFieldIndex)
 }
