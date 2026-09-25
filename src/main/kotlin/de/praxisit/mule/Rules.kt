@@ -42,6 +42,7 @@ object Rules {
                 is MoveWithFromField -> board.willCloseMule(move.fromField, move.toField, color)
             }
         }
+        if (captureMoves.isEmpty()) return moves
         val capturablePieces = board.capturablePieces(color.opposite)
         if (capturablePieces.isEmpty()) return moves
 
@@ -50,16 +51,29 @@ object Rules {
         } + normalMoves
     }
 
-    private fun settingMoves(board: Board, color: Color): List<Move> =
-        board.emptyFieldsIndices.map { SetMove(color, it) }
+    private fun settingMoves(board: Board, color: Color): List<Move> {
+        val moves = ArrayList<Move>(FieldIndex.SIZE)
+        board.emptyFields.forEachField { moves.add(SetMove(color, it)) }
+        return moves
+    }
 
-    private fun pushingMoves(board: Board, color: Color): List<Move> =
-        board.fieldsIndicesWithColor(color).flatMap { fromField ->
-            board.connectedEmptyFields(fromField).map { emptyField -> PushMove(color, fromField, emptyField) }
+    private fun pushingMoves(board: Board, color: Color): List<Move> {
+        val moves = ArrayList<Move>()
+        val emptyFields = board.emptyFields
+        board.stones(color).forEachField { fromField ->
+            (Board.NEIGHBORS[fromField.index] and emptyFields).forEachField { toField ->
+                moves.add(PushMove(color, fromField, toField))
+            }
         }
+        return moves
+    }
 
-    private fun jumpMoves(board: Board, color: Color): List<Move> =
-        board.fieldsIndicesWithColor(color).flatMap { fromField ->
-            board.emptyFieldsIndices.map { emptyField -> JumpMove(color, fromField, emptyField) }
+    private fun jumpMoves(board: Board, color: Color): List<Move> {
+        val moves = ArrayList<Move>()
+        val emptyFields = board.emptyFields
+        board.stones(color).forEachField { fromField ->
+            emptyFields.forEachField { toField -> moves.add(JumpMove(color, fromField, toField)) }
         }
+        return moves
+    }
 }

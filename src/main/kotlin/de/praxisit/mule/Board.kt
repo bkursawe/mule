@@ -18,87 +18,100 @@ import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 //  21-------22-------23
 //
 /**
- * The stones on the 24 fields. A board is immutable: every change returns a new board.
+ * The stones on the 24 fields as one bit mask per color, bit i stands for field i.
+ * A board is immutable: every change returns a new board.
  */
-class Board private constructor(private val fields: Array<Field>) {
+class Board private constructor(private val whiteStones: Int, private val blackStones: Int) {
 
-    constructor() : this(Array(FieldIndex.SIZE) { _ -> Empty })
+    constructor() : this(0, 0)
 
-    fun getStone(field: FieldIndex): Field = fields[field.index]
+    /** The fields with a stone of [color] as a bit mask. */
+    fun stones(color: Color) = if (color == White) whiteStones else blackStones
 
-    fun fieldsIndicesWithColor(color: Color) =
-        fields.withIndex().filter { it.value == color }.map { it.index.asFieldIndex }.toSet()
+    /** The empty fields as a bit mask. */
+    val emptyFields: Int
+        get() = ALL_FIELDS and (whiteStones or blackStones).inv()
 
-    val emptyFieldsIndices: Set<FieldIndex> by lazy {
-        fields.withIndex().filter { it.value == Empty }.map { it.index.asFieldIndex }.toSet()
+    fun getStone(field: FieldIndex): Field = when {
+        whiteStones and field.bit != 0 -> White
+        blackStones and field.bit != 0 -> Black
+        else                           -> Empty
     }
 
-    fun setStone(color: Color, field: FieldIndex) = withField(field, color)
+    fun fieldsIndicesWithColor(color: Color) = stones(color).toFieldIndices()
 
-    fun removeStone(field: FieldIndex) = withField(field, Empty)
+    val emptyFieldsIndices: Set<FieldIndex>
+        get() = emptyFields.toFieldIndices()
+
+    fun setStone(color: Color, field: FieldIndex): Board {
+        val board = removeStone(field)
+        return if (color == White) {
+            Board(board.whiteStones or field.bit, board.blackStones)
+        } else {
+            Board(board.whiteStones, board.blackStones or field.bit)
+        }
+    }
+
+    fun removeStone(field: FieldIndex) = Board(whiteStones and field.bit.inv(), blackStones and field.bit.inv())
 
     fun moveStone(fromIndex: FieldIndex, toIndex: FieldIndex): Board {
-        require(fields[fromIndex.index] != Empty)
-        require(fields[toIndex.index] == Empty)
+        val color = getStone(fromIndex)
+        require(color is Color)
+        require(getStone(toIndex) == Empty)
 
-        val newFields = fields.copyOf()
-        newFields[toIndex.index] = fields[fromIndex.index]
-        newFields[fromIndex.index] = Empty
-        return Board(newFields)
+        return removeStone(fromIndex).setStone(color, toIndex)
     }
-
-    private fun withField(field: FieldIndex, value: Field): Board {
-        val newFields = fields.copyOf()
-        newFields[field.index] = value
-        return Board(newFields)
-    }
-
-    fun connectedEmptyFields(field: FieldIndex) = CONNECTIONS[field.index].filter { fields[it.index] == Empty }
 
     // Stones in a mule may only be captured if every stone is in a mule
     fun capturablePieces(color: Color): Set<FieldIndex> {
-        val stones = fieldsIndicesWithColor(color)
-        return stones.filter { !willCloseMule(it, color) }.toSet().ifEmpty { stones }
+        val stones = stones(color)
+        val outsideMules = stones and stonesInMules(stones).inv()
+        return (if (outsideMules != 0) outsideMules else stones).toFieldIndices()
     }
 
-    fun willCloseMule(field: FieldIndex, color: Color): Boolean {
-        val mules = COMPLETABLE_MULES[field.index]
-        val firstMule = mules.first()
-        val secondMule = mules.last()
-        return firstMule.first.index.asField == color && firstMule.second.index.asField == color ||
-                secondMule.first.index.asField == color && secondMule.second.index.asField == color
+    private fun stonesInMules(stones: Int) =
+        MULE_MASKS.fold(0) { inMules, mule -> if (stones and mule == mule) inMules or mule else inMules }
+
+    fun willCloseMule(field: FieldIndex, color: Color) = closesMule(stones(color), field)
+
+    fun willCloseMule(fromField: FieldIndex, toField: FieldIndex, color: Color) =
+        closesMule(stones(color) and fromField.bit.inv(), toField)
+
+    // A stone on field closes a mule if the other two fields of one of its mules are occupied by stones
+    private fun closesMule(stones: Int, field: FieldIndex) = MULES_OF_FIELD[field.index].any { mule ->
+        val otherFields = mule and field.bit.inv()
+        stones and otherFields == otherFields
     }
 
-    fun willCloseMule(fromField: FieldIndex, toField: FieldIndex, color: Color): Boolean {
-        val mules = COMPLETABLE_MULES[toField.index]
-        val firstMule = mules.first()
-        val secondMule = mules.last()
-        fun checkMule(firstMule: Pair<FieldIndex, FieldIndex>) =
-            firstMule.first != fromField && firstMule.first.index.asField == color &&
-                    firstMule.second != fromField && firstMule.second.index.asField == color
-        return checkMule(firstMule) || checkMule(secondMule)
+    fun imcompleteMillCount(color: Color): Int {
+        val stones = stones(color)
+        val emptyFields = emptyFields
+        var closingFields = 0
+        for (mule in MULE_MASKS) {
+            if (Integer.bitCount(stones and mule) == 2) closingFields = closingFields or (mule and emptyFields)
+        }
+        return Integer.bitCount(closingFields)
     }
 
-    fun imcompleteMillCount(color: Color) = emptyFieldsIndices.count { field -> willCloseMule(field, color) }
+    fun muleCount(color: Color): Int {
+        val stones = stones(color)
+        return MULE_MASKS.count { mule -> stones and mule == mule }
+    }
 
-    fun muleCount(color: Color) = MULES.count { mule -> mule.all { field -> field.asField == color } }
-
-    fun weightedStonesOnBoard(color: Color) = fields.indices.filter { fields[it] == color }.sumOf { WEIGHTED_POSITIONS[it] }
-
-    private val Int.asField: Field
-        get() = fields[this]
-
-    private val FieldIndex.asField: Field
-        get() = fields[this.index]
+    fun weightedStonesOnBoard(color: Color): Int {
+        var weight = 0
+        stones(color).forEachField { weight += WEIGHTED_POSITIONS[it.index] }
+        return weight
+    }
 
     override fun equals(other: Any?) =
-        this === other || other is Board && hashCode() == other.hashCode() && fields.contentEquals(other.fields)
+        this === other || other is Board && whiteStones == other.whiteStones && blackStones == other.blackStones
 
-    override fun hashCode() = fieldsHash
-
-    private val fieldsHash: Int by lazy { fields.contentHashCode() }
+    override fun hashCode() = 31 * whiteStones + blackStones
 
     companion object {
+        private const val ALL_FIELDS = 0xFFFFFF
+
         val MULES = arrayOf(
             listOf(0, 1, 2),
             listOf(3, 4, 5),
@@ -122,6 +135,12 @@ class Board private constructor(private val fields: Array<Field>) {
             FieldIndex.INDEXES.map { fieldIndex ->
                 MULES.filter { mule -> fieldIndex in mule }.map { it - fieldIndex }.map { Pair(it.first(), it.last()) }
             }
+
+        private val MULE_MASKS: IntArray = MULES.map { it.toMask() }.toIntArray()
+
+        private val MULES_OF_FIELD: Array<IntArray> = FieldIndex.INDEXES.map { field ->
+            MULE_MASKS.filter { mule -> mule and field.bit != 0 }.toIntArray()
+        }.toTypedArray()
 
         val CONNECTIONS = arrayOf(
             listOf(1, 9),
@@ -150,6 +169,11 @@ class Board private constructor(private val fields: Array<Field>) {
             listOf(14, 22)
         ).map { list -> list.map { field -> field.asFieldIndex } }.toTypedArray()
 
-        val WEIGHTED_POSITIONS = CONNECTIONS.map { it.size }
+        /** The connected fields of every field as a bit mask. */
+        val NEIGHBORS: IntArray = CONNECTIONS.map { it.toMask() }.toIntArray()
+
+        val WEIGHTED_POSITIONS = CONNECTIONS.map { it.size }.toIntArray()
+
+        private fun List<FieldIndex>.toMask() = fold(0) { mask, field -> mask or field.bit }
     }
 }

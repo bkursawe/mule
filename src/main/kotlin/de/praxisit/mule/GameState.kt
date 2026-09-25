@@ -2,6 +2,7 @@ package de.praxisit.mule
 
 import de.praxisit.mule.GameResult.*
 import de.praxisit.mule.Phase.LOOSE
+import kotlin.LazyThreadSafetyMode.NONE
 
 /**
  * Everything that decides which moves are legal: the stones on the board, the stones of both players
@@ -21,13 +22,15 @@ data class Position(
 
 /**
  * A position within a game. Besides the position it knows what the remis rules need:
- * the positions played so far and the number of moves since the last capture.
+ * the previous states and the number of moves since the last capture.
  */
-class GameState(
-    val position: Position = Position(),
-    val movesWithoutCapture: Int = 0,
-    private val history: List<Position> = emptyList()
+class GameState private constructor(
+    val position: Position,
+    val movesWithoutCapture: Int,
+    private val previous: GameState?
 ) {
+    constructor(position: Position = Position(), movesWithoutCapture: Int = 0) : this(position, movesWithoutCapture, null)
+
     val board: Board
         get() = position.board
 
@@ -37,7 +40,7 @@ class GameState(
     val activePlayer: Player
         get() = position.activePlayer
 
-    val legalMoves: List<Move> by lazy { Rules.legalMoves(position) }
+    val legalMoves: List<Move> by lazy(NONE) { Rules.legalMoves(position) }
 
     /** Plays a legal move of the active player and hands the turn to the opponent. */
     fun play(move: Move): GameState {
@@ -46,16 +49,27 @@ class GameState(
         return GameState(
             position = Rules.apply(position, move),
             movesWithoutCapture = if (move.isCaptureMove) 0 else movesWithoutCapture + 1,
-            history = history + position
+            previous = this
         )
     }
 
-    val isRepeated: Boolean by lazy { history.count { it == position } >= 2 }
+    // Positions before the last capture had more stones, so only the states since then can repeat
+    val isRepeated: Boolean by lazy(NONE) {
+        var occurrences = 0
+        var state = previous
+        var steps = 0
+        while (state != null && steps < movesWithoutCapture) {
+            if (state.position == position) occurrences++
+            state = state.previous
+            steps++
+        }
+        occurrences >= 2
+    }
 
     val isRemis: Boolean
         get() = movesWithoutCapture >= MOVES_WITHOUT_CAPTURE_FOR_REMIS || isRepeated
 
-    val result: GameResult by lazy {
+    val result: GameResult by lazy(NONE) {
         when {
             position.white.phase == LOOSE -> Win(Black)
             position.black.phase == LOOSE -> Win(White)
