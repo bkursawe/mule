@@ -2,12 +2,6 @@
 
 Mühle-Spiel (Nine Men's Morris) mit Computergegner in Kotlin. „Mule“ = Mühle (engl. *mill*).
 
-## Stand
-
-Der Commit `f58a1fc` („empty project“) hat alle Quellen entfernt. Übrig ist nur das Gradle-Gerüst.
-Die letzte vollständige Implementierung liegt in `0e5e4aa`. Sie dient als Referenz:
-`git show 0e5e4aa:src/main/kotlin/de/praxisit/mule/Board.kt`
-
 ## Build & Test
 
 - Kotlin 1.9.23 (JVM), JDK-Toolchain 21, Gradle-Wrapper 8.5
@@ -21,9 +15,8 @@ Die letzte vollständige Implementierung liegt in `0e5e4aa`. Sie dient als Refer
 ## Struktur
 
 - Paket `de.praxisit.mule` in `src/main/kotlin/…` und `src/test/kotlin/…`
-- `group` in `build.gradle` ist noch `de.praxisit.liftsim`, ein Überbleibsel aus einem anderen Projekt.
 
-## Domäne (aus der Referenzimplementierung)
+## Domäne
 
 Brettfelder sind mit 0–23 nummeriert:
 
