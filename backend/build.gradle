@@ -1,0 +1,36 @@
+plugins {
+    id 'org.jetbrains.kotlin.plugin.serialization'
+    id 'application'
+}
+
+dependencies {
+    implementation project(':engine')
+    implementation "io.ktor:ktor-server-core:$ktorVersion"
+    implementation "io.ktor:ktor-server-netty:$ktorVersion"
+    implementation "io.ktor:ktor-server-content-negotiation:$ktorVersion"
+    implementation "io.ktor:ktor-server-status-pages:$ktorVersion"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:$ktorVersion"
+    runtimeOnly 'ch.qos.logback:logback-classic:1.6.4'
+
+    testImplementation "io.ktor:ktor-server-test-host:$ktorVersion"
+    testImplementation "io.ktor:ktor-client-content-negotiation:$ktorVersion"
+}
+
+application {
+    mainClass = 'de.praxisit.mule.server.ServerKt'
+}
+
+// The web frontend is served from the classpath folder "static"
+tasks.named('processResources') {
+    from(rootProject.file('frontend')) {
+        into 'static'
+    }
+}
+
+tasks.register('runConsole', JavaExec) {
+    description = 'Plays on the console: computer against computer, or with --args=--human against the computer.'
+    group = 'application'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'de.praxisit.mule.console.GameKt'
+    standardInput = System.in
+}
