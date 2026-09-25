@@ -28,7 +28,8 @@ class PerftTest {
         expectedCount: Long
     ) {
         val color = if (colorName == "White") White else Black
-        val state = createState(whiteStones.toFields(), whiteStonesToSet, blackStones.toFields(), blackStonesToSet, color)
+        val state =
+            createState(whiteStones.toFields(), whiteStonesToSet, blackStones.toFields(), blackStonesToSet, color)
 
         assertThat(perft(state.position, depth)).isEqualTo(expectedCount)
     }

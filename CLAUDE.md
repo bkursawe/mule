@@ -4,12 +4,16 @@ Mühle-Spiel (Nine Men's Morris) mit Computergegner in Kotlin. „Mule“ = Müh
 
 ## Build & Test
 
-- Kotlin 1.9.23 (JVM), JDK-Toolchain 21, Gradle-Wrapper 8.5
-- Tests: JUnit 5 (inkl. `junit-jupiter-params`), AssertJ, kotlin-test
+- Kotlin 2.4.20 (JVM), JDK-Toolchain 21, Gradle-Wrapper 9.8.0
+- Tests: JUnit 6, AssertJ; Lint: ktlint (Regeln in `.editorconfig`)
+- CI: `.github/workflows/build.yml` führt `./gradlew build` aus
 
 ```sh
-./gradlew build                                   # kompilieren + testen
+./gradlew build                                      # kompilieren, ktlint, testen
 ./gradlew test --tests "de.praxisit.mule.BoardTest"  # einzelne Testklasse
+./gradlew ktlintFormat                               # Formatierung korrigieren
+./gradlew run                                        # Computer gegen Computer
+./gradlew run --args=--human                         # Mensch gegen Computer
 ```
 
 ## Struktur

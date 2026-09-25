@@ -90,13 +90,7 @@ class AlphaBetaStrategy(
             return bestMove(state, depth, ply, alpha, beta).second
         }
 
-        private fun bestMove(
-            state: GameState,
-            depth: Int,
-            ply: Int,
-            alpha: Double,
-            beta: Double
-        ): Pair<Move?, Double> {
+        private fun bestMove(state: GameState, depth: Int, ply: Int, alpha: Double, beta: Double): Pair<Move?, Double> {
             val key = state.key
             var bestMove: Move? = null
             var bestScore = NEGATIVE_INFINITY
@@ -181,10 +175,10 @@ class AlphaBetaStrategy(
         // the stones set; the moves without capture are part of the key because the remis rule depends on them.
         private val GameState.key: Long
             get() = board.stones(White).toLong() or
-                    (board.stones(Black).toLong() shl 24) or
-                    (position.white.stonesSet.toLong() shl 48) or
-                    (position.black.stonesSet.toLong() shl 52) or
-                    ((if (activeColor == White) 0L else 1L) shl 56) or
-                    (movesWithoutCapture.coerceAtMost(63).toLong() shl 57)
+                (board.stones(Black).toLong() shl 24) or
+                (position.white.stonesSet.toLong() shl 48) or
+                (position.black.stonesSet.toLong() shl 52) or
+                ((if (activeColor == White) 0L else 1L) shl 56) or
+                (movesWithoutCapture.coerceAtMost(63).toLong() shl 57)
     }
 }

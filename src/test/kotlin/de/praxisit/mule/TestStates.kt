@@ -4,7 +4,9 @@ import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 
 fun Board.setStone(color: Color, field: Int) = setStone(color, field.asFieldIndex)
 
-fun Board.setStones(color: Color, vararg fields: Int) = fields.fold(this) { board, field -> board.setStone(color, field) }
+fun Board.setStones(color: Color, vararg fields: Int) = fields.fold(this) { board, field ->
+    board.setStone(color, field)
+}
 
 fun Board.getStone(field: Int) = getStone(field.asFieldIndex)
 

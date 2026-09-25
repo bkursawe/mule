@@ -29,7 +29,10 @@ class GameState private constructor(
     val movesWithoutCapture: Int,
     private val previous: GameState?
 ) {
-    constructor(position: Position = Position(), movesWithoutCapture: Int = 0) : this(position, movesWithoutCapture, null)
+    constructor(
+        position: Position = Position(),
+        movesWithoutCapture: Int = 0
+    ) : this(position, movesWithoutCapture, null)
 
     val board: Board
         get() = position.board

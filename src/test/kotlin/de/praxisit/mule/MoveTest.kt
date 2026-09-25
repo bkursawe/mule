@@ -53,7 +53,7 @@ class MoveTest {
             "JUMP,Black,1,-1,3",
             "JUMP,Black,1,24,3",
             "JUMP,Black,1,2,-1",
-            "JUMP,Black,1,2,24",
+            "JUMP,Black,1,2,24"
         ]
     )
     fun `create illegal moves`(method: String, colorName: String, from: Int?, to: Int, captured: Int?) {
@@ -116,7 +116,7 @@ class MoveTest {
         @CsvSource(
             value = [
                 "1",
-                "2",
+                "2"
             ]
         )
         fun `add capture field to PushMove with invalid field`(captureField: Int) {
@@ -144,7 +144,6 @@ class MoveTest {
             assertThatThrownBy { createJumpMove(White, 1, 2).addCaptureField(captureField) }
                 .isInstanceOf(IllegalMoveException::class.java)
         }
-
     }
 
     private fun createSetMove(color: Color, to: Int, captured: Int? = null) =

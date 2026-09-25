@@ -5,12 +5,11 @@ import org.junit.jupiter.api.Test
 
 class SimpleChoosingStrategyTest {
     class TestStrategy(private val field1: Int, private val emptyField: Int? = null) : EvaluationStrategy {
-        override fun evaluate(position: Position) =
-            when {
-                emptyField != null && position.board.getStone(emptyField) == Empty -> 10.0
-                position.board.getStone(field1) != Empty                           -> 10.0
-                else                                                               -> 0.0
-            }
+        override fun evaluate(position: Position) = when {
+            emptyField != null && position.board.getStone(emptyField) == Empty -> 10.0
+            position.board.getStone(field1) != Empty                           -> 10.0
+            else                                                               -> 0.0
+        }
     }
 
     @Test

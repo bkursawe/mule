@@ -13,11 +13,11 @@ class SimpleEvaluationStrategy : EvaluationStrategy {
     override fun evaluate(position: Position): Double {
         val board = position.board
         val pointsForWhite = board.weightedStonesOnBoard(White) +
-                5 * board.openMuleCount(White) +
-                10 * board.muleCount(White)
+            5 * board.openMuleCount(White) +
+            10 * board.muleCount(White)
         val pointsForBlack = board.weightedStonesOnBoard(Black) +
-                5 * board.openMuleCount(Black) +
-                10 * board.muleCount(Black)
+            5 * board.openMuleCount(Black) +
+            10 * board.muleCount(Black)
 
         return (pointsForWhite - pointsForBlack).toDouble()
     }
@@ -41,10 +41,10 @@ class ExtendedEvaluationStrategy(
         val player = position.player(color)
         val mobility = if (player.phase == MOVING) mobility(board, color) else 0
         return stoneWeight * player.stones +
-                muleWeight * board.muleCount(color) +
-                closableMuleWeight * closableMules(board, color, player.phase) +
-                mobilityWeight * mobility +
-                board.weightedStonesOnBoard(color)
+            muleWeight * board.muleCount(color) +
+            closableMuleWeight * closableMules(board, color, player.phase) +
+            mobilityWeight * mobility +
+            board.weightedStonesOnBoard(color)
     }
 
     // In the moving phase a mule can only be closed by pushing a neighbouring stone that is not part of it

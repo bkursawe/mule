@@ -179,7 +179,11 @@ class GameStateTest {
         )
         fun `the 50th move without capture is a remis`(movesBefore: Int, expectedRemis: Boolean) {
             val state = createState(
-                listOf(0, 4, 9, 13), 0, listOf(10, 12, 20, 23), 0, White,
+                listOf(0, 4, 9, 13),
+                0,
+                listOf(10, 12, 20, 23),
+                0,
+                White,
                 movesWithoutCapture = movesBefore
             )
 

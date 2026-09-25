@@ -108,7 +108,7 @@ class Board private constructor(private val whiteStones: Int, private val blackS
     }
 
     override fun equals(other: Any?) =
-        this === other || other is Board && whiteStones == other.whiteStones && blackStones == other.blackStones
+        this === other || (other is Board && whiteStones == other.whiteStones && blackStones == other.blackStones)
 
     override fun hashCode() = 31 * whiteStones + blackStones
 

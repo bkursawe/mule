@@ -15,4 +15,3 @@ data object White : Color() {
 data object Black : Color() {
     override val opposite: Color = White
 }
-
