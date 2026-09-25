@@ -148,18 +148,18 @@ test.describe('Spielende', () => {
     await expect(mule.status).toContainText('Du hast nur noch zwei Steine.');
   });
 
-  test('nach 50 Zügen ohne Schlagen ist das Spiel unentschieden', async ({ mule }) => {
+  test('nach 20 Zügen je Seite ohne Mühle ist das Spiel unentschieden', async ({ mule }) => {
     await mule.openPosition({
       white: ['a7', 'd7', 'g4', 'f2'],
       black: ['b6', 'd6', 'f6', 'd1'],
-      movesWithoutCapture: 49,
+      movesWithoutCapture: 39,
     });
 
     await mule.field('f2').click();
     await mule.field('d2').click();
 
     await expect(mule.status).toContainText('Unentschieden.');
-    await expect(mule.status).toContainText('50 Züge lang hat niemand einen Stein geschlagen.');
+    await expect(mule.status).toContainText('Ihr habt beide 20 Züge lang keine Mühle geschlossen.');
   });
 
   test('ein neues Spiel beginnt mit leerem Brett', async ({ mule }) => {

@@ -154,11 +154,29 @@ class GameStateTest {
     inner class MovesWithoutCapture {
         @Test
         fun `a move without capture increments the counter`() {
+            val state = createBackAndForthState()
+                .play(PushMove(White, 0.asFieldIndex, 1.asFieldIndex))
+                .play(PushMove(Black, 23.asFieldIndex, 22.asFieldIndex))
+
+            assertThat(state.movesWithoutCapture).isEqualTo(2)
+        }
+
+        @Test
+        fun `setting moves do not count`() {
             val state = GameState()
                 .play(createSetMove(White, 0))
                 .play(createSetMove(Black, 1))
 
-            assertThat(state.movesWithoutCapture).isEqualTo(2)
+            assertThat(state.movesWithoutCapture).isEqualTo(0)
+        }
+
+        @Test
+        fun `a setting move resets the counter`() {
+            val state = createState(listOf(0, 1), 0, listOf(4, 5), 1, Black, movesWithoutCapture = 10)
+
+            val stateAfter = state.play(createSetMove(Black, 9))
+
+            assertThat(stateAfter.movesWithoutCapture).isEqualTo(0)
         }
 
         @Test
@@ -173,11 +191,11 @@ class GameStateTest {
         @ParameterizedTest
         @CsvSource(
             value = [
-                "48,false",
-                "49,true"
+                "38,false",
+                "39,true"
             ]
         )
-        fun `the 50th move without capture is a remis`(movesBefore: Int, expectedRemis: Boolean) {
+        fun `the 40th move without capture is a remis`(movesBefore: Int, expectedRemis: Boolean) {
             val state = createState(
                 listOf(0, 4, 9, 13),
                 0,

@@ -27,7 +27,7 @@ liefern oder kaputtes JSON schicken.
 **Regeln mit Rechenlogik.**
 - Schlagen nur außerhalb geschlossener Mühlen, außer alle gegnerischen Steine stehen in Mühlen.
 - Springen ab drei Steinen; verloren mit zwei Steinen oder blockiert.
-- Remis nach dreifacher Wiederholung oder 50 Zügen ohne Schlagen.
+- Remis nach dreifacher Wiederholung oder 20 Zügen je Spieler ohne Mühle, gezählt ab der Zugphase.
 - Zähler für Hand und verlorene Steine, dazu Singular und Plural.
 
 **Fehlermeldungen im Code** (`errorTexts`):
@@ -54,7 +54,7 @@ Legende: ✅ abgedeckt · ➖ bewusst ausgelassen · ⏳ offen
 | Setzen, Ziehen, Springen, Schlagen | ✅ | `spiel.spec.ts` › Setzen, Ziehen und Schlagen |
 | Computer schlägt einen Stein (Text mit Feld) | ✅ | `spiel.spec.ts` › schließt der Computer eine Mühle … |
 | Sieg (zwei Steine), Niederlage (zwei Steine, blockiert) | ✅ | `spiel.spec.ts` › Spielende, `spiel.edge.spec.ts` › Texte |
-| Remis 50 Züge | ✅ | über `movesWithoutCapture: 49` aus der Test-API |
+| Remis 20 Züge je Seite | ✅ | über `movesWithoutCapture: 39` aus der Test-API; dass Setzzüge nicht zählen, prüft `GameStateTest` |
 | Remis Wiederholung | ✅ | Serverantwort per `route.fetch` umgeschrieben; die Erkennung selbst testet `GameStateTest` |
 | Schlagen: Steine in Mühlen gesperrt | ✅ | `spiel.edge.spec.ts` › Mühle und Schlagen |
 | Schlagen: alle Steine in Mühlen | ✅ | `spiel.spec.ts` › der Mensch gewinnt … |

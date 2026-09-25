@@ -22,7 +22,8 @@ data class Position(
 
 /**
  * A position within a game. Besides the position it knows what the remis rules need:
- * the previous states and the number of moves since the last capture.
+ * the previous states and the number of moves since the last capture. Setting moves do not count,
+ * so the counter starts with the moving phase.
  */
 class GameState private constructor(
     val position: Position,
@@ -51,12 +52,12 @@ class GameState private constructor(
 
         return GameState(
             position = Rules.apply(position, move),
-            movesWithoutCapture = if (move.isCaptureMove) 0 else movesWithoutCapture + 1,
+            movesWithoutCapture = if (move.isCaptureMove || move is SetMove) 0 else movesWithoutCapture + 1,
             previous = this
         )
     }
 
-    // Positions before the last capture had more stones, so only the states since then can repeat
+    // Positions before the last capture or setting move had other stones, so only the states since then can repeat
     val isRepeated: Boolean by lazy(NONE) {
         var occurrences = 0
         var state = previous
@@ -83,7 +84,8 @@ class GameState private constructor(
     }
 
     companion object {
-        const val MOVES_WITHOUT_CAPTURE_FOR_REMIS = 50
+        /** 20 moves per player without a mule, as in the tournament rules; each player's move counts. */
+        const val MOVES_WITHOUT_CAPTURE_FOR_REMIS = 40
     }
 }
 

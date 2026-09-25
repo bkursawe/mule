@@ -10,7 +10,7 @@ Die Hauptabläufe halten: Setzen, Ziehen, Springen, Schlagen, alle Spielenden mi
 Tastaturbedienung. Doppelte und verspätete Eingaben lösen keinen zweiten Zug aus; Serverfehler, Abbrüche, 404 und
 409 führen zu einer verständlichen Meldung, ohne dass das Brett einen falschen Stand zeigt. Die einzige echte Schwäche
 im Code ist eine Serverantwort mit Status 200, aber ohne gültiges JSON: Dann friert das Brett ein und behauptet
-weiter „Du bist am Zug“. Dazu kommt eine offene Regelfrage zur 50-Züge-Regel.
+weiter „Du bist am Zug“. Dazu kam eine Regelfrage zur 50-Züge-Regel, inzwischen zugunsten der Turnierregel entschieden.
 
 | Schweregrad | Anzahl |
 |---|---|
@@ -58,7 +58,7 @@ Antwort ersetzt.
 
 ---
 
-### F-02 · Die 50-Züge-Regel weicht von der Turnierregel ab · **Niedrig**
+### F-02 · Die 50-Züge-Regel weicht von der Turnierregel ab · **Niedrig** · behoben
 
 - **Kategorie:** Geschäftsregel
 - **Art:** Spezifikationslücke
@@ -69,7 +69,10 @@ Antwort ersetzt.
 **Tatsächlich:** Die App zählt 50 Halbzüge ohne Schlagen und rechnet die Setzphase mit (`GameState.kt:54`,
 `MOVES_WITHOUT_CAPTURE_FOR_REMIS`). Setzen beide 18 Steine ohne Mühle, bleiben nur 16 Züge je Spieler bis zum Remis.
 Das Verhalten entspricht `CLAUDE.md` und wird von „nach 50 Zügen ohne Schlagen ist das Spiel unentschieden“ geprüft.
-**Auswirkung:** Kein Fehler, aber eine Entscheidung, die offen ist: Zählung ab Zugphase oder nicht, 40 oder 50 Halbzüge.
+**Auswirkung:** Kein Fehler, aber eine Entscheidung, die offen war: Zählung ab Zugphase oder nicht, 40 oder 50 Halbzüge.
+**Behoben:** Entschieden für die Turnierregel. Remis nach 40 Halbzügen ohne Mühle; Setzzüge zählen nicht und setzen
+den Zähler zurück. Neuer Text: „Ihr habt beide 20 Züge lang keine Mühle geschlossen.“ Geprüft von `GameStateTest`
+und „nach 20 Zügen je Seite ohne Mühle ist das Spiel unentschieden“.
 
 ---
 
@@ -109,5 +112,4 @@ Der erste Lauf hatte acht rote Tests; alle lagen am Test, nicht an der App:
 ## Empfohlene nächste Schritte
 
 1. F-01 beheben (`api.js` und `run()` in `app.js`) und `test.fail` aus dem Test entfernen.
-2. Die 50-Züge-Regel festlegen (F-02) und Engine-Test und E2E-Test nachziehen.
-3. Firefox als weiteres Projekt aufnehmen, sobald die CI-Laufzeit es erlaubt.
+2. Firefox als weiteres Projekt aufnehmen, sobald die CI-Laufzeit es erlaubt.

@@ -349,7 +349,7 @@ function resultTexts({ status, winner, reason }) {
     TWO_STONES: humanWon ? 'Der Computer hat nur noch zwei Steine.' : 'Du hast nur noch zwei Steine.',
     BLOCKED: humanWon ? 'Der Computer kann keinen Stein mehr ziehen.' : 'Du kannst keinen Stein mehr ziehen.',
     REPETITION: 'Dieselbe Stellung ist dreimal vorgekommen.',
-    NO_CAPTURE: '50 Züge lang hat niemand einen Stein geschlagen.',
+    NO_CAPTURE: 'Ihr habt beide 20 Züge lang keine Mühle geschlossen.',
   }[reason];
   return { status: headline, detail: why };
 }
