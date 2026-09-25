@@ -5,6 +5,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
+import io.ktor.server.application.log
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.http.content.staticResources
 import io.ktor.server.netty.Netty
@@ -30,7 +31,13 @@ fun main() {
 @Serializable
 data class ErrorDto(val message: String)
 
-fun Application.module(games: GameService = GameService()) {
+/**
+ * [testApi] adds the endpoint for automated tests, see [testRoutes]. Never enable it for real players.
+ */
+fun Application.module(
+    games: GameService = GameService(),
+    testApi: Boolean = System.getenv("MULE_TEST_API") == "true"
+) {
     install(ContentNegotiation) {
         json()
     }
@@ -40,8 +47,10 @@ fun Application.module(games: GameService = GameService()) {
         exception<IllegalArgumentException> { call, cause -> call.respondError(HttpStatusCode.BadRequest, cause) }
         exception<IllegalStateException> { call, cause -> call.respondError(HttpStatusCode.Conflict, cause) }
     }
+    if (testApi) log.warn("The test API is enabled: POST /api/test/games starts games from any position")
     routing {
         gameRoutes(games)
+        if (testApi) testRoutes(games)
         staticResources("/", "static")
     }
 }

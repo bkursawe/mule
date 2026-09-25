@@ -28,11 +28,17 @@ class GameNotFoundException(id: String) : RuntimeException("No game with id $id"
 /**
  * A game between a human and the computer. Moves are played one after the other, guarded by [mutex].
  */
-class GameSession(val id: String, val humanColor: Color, val strength: Strength, now: Instant) {
+class GameSession(
+    val id: String,
+    val humanColor: Color,
+    val strength: Strength,
+    now: Instant,
+    initialState: GameState = GameState()
+) {
     private val computer = strength.createComputer()
     private val mutex = Mutex()
     private val moves = mutableListOf<Move>()
-    private var state = GameState()
+    private var state = initialState
 
     @Volatile
     var lastAccess: Instant = now
@@ -77,9 +83,9 @@ class GameService(
 ) {
     private val sessions = ConcurrentHashMap<String, GameSession>()
 
-    suspend fun create(humanColor: Color, strength: Strength): GameDto {
+    suspend fun create(humanColor: Color, strength: Strength, initialState: GameState = GameState()): GameDto {
         removeIdleGames()
-        val session = GameSession(UUID.randomUUID().toString(), humanColor, strength, clock.instant())
+        val session = GameSession(UUID.randomUUID().toString(), humanColor, strength, clock.instant(), initialState)
         sessions[session.id] = session
         return session.snapshot(clock.instant())
     }

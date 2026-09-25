@@ -42,3 +42,9 @@ bin/
 .DS_Store
 ### Kotlin ###
 .kotlin/
+
+### Playwright ###
+e2e/node_modules/
+e2e/playwright-report/
+e2e/test-results/
+e2e/blob-report/

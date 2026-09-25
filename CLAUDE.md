@@ -6,7 +6,8 @@ Mühle-Spiel (Nine Men's Morris) gegen einen Computergegner, im Browser spielbar
 
 - Kotlin 2.4.20 (JVM), JDK-Toolchain 21, Gradle-Wrapper 9.8.0, Ktor 3 (Version in `gradle.properties`)
 - Tests: JUnit 6, AssertJ, Ktor-Testhost; Lint: ktlint (Regeln in `.editorconfig`)
-- CI: `.github/workflows/build.yml` führt `./gradlew build` aus
+- E2E: Playwright (Node 22, Chromium) in `e2e/`, startet den Server aus `installDist` selbst
+- CI: `.github/workflows/build.yml` führt `./gradlew build` und in einem zweiten Job die E2E-Tests aus
 
 ```sh
 ./gradlew build                                             # kompilieren, ktlint, testen (alle Module)
@@ -15,7 +16,12 @@ Mühle-Spiel (Nine Men's Morris) gegen einen Computergegner, im Browser spielbar
 ./gradlew :backend:run                                      # Webserver, http://localhost:8080 (PORT setzbar)
 ./gradlew :backend:runConsole                               # Konsole: Computer gegen Computer
 ./gradlew :backend:runConsole --args=--human                # Konsole: Mensch gegen Computer
+
+./gradlew :backend:installDist && cd e2e && npm ci           # E2E vorbereiten
+npx playwright test                                          # E2E, Port 8089; Bericht: npx playwright show-report
 ```
+
+Ohne Download des Playwright-Browsers: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium` setzen.
 
 ## Struktur
 
@@ -24,6 +30,9 @@ Mühle-Spiel (Nine Men's Morris) gegen einen Computergegner, im Browser spielbar
 - `frontend/`: statisches HTML/CSS/JS ohne Build-Schritt; `processResources` kopiert es nach `static/`,
   der Server liefert es unter `/` aus. Schriften (Marcellus, Alegreya Sans) liegen selbst gehostet in
   `frontend/fonts/` mit ihren OFL-Lizenzen, damit keine Anfrage an einen Schriftdienst geht.
+- `e2e/`: Playwright-Tests der Oberfläche. `spiel.spec.ts` für die Hauptabläufe, `spiel.edge.spec.ts` für Randfälle,
+  `support/mule.ts` für Selektoren und Spielstart. Stand, Testdaten und Befunde in `TESTPLAN.md`, `TESTDATEN.md`,
+  `FINDINGS.md`.
 
 ## Domäne
 
@@ -50,6 +59,8 @@ Abhängigkeiten nur von oben nach unten:
    - Server: `Server.kt` (Routen, Fehler → 400/404/409), `GameService` (Spiele im Speicher, je Spiel ein Mutex,
      inaktive Spiele fliegen nach 6 h raus), `Dtos.kt` (JSON-Format). API: `POST /api/games`,
      `GET /api/games/{id}`, `POST /api/games/{id}/moves`, `POST /api/games/{id}/computer-move`.
+     `TestApi.kt`: `POST /api/test/games` legt ein Spiel in beliebiger Stellung an, nur mit `MULE_TEST_API=true`.
+     Sie ist für die E2E-Tests gedacht und darf auf keinem Server für echte Spieler aktiv sein.
    - Konsole: `Game` (Spielschleife), `ConsoleUi` (Ausgabe, `ConsolePlayer`).
 2. **KI**: `EvaluationStrategy` bewertet eine `Position` (positiv = Vorteil Weiß). Standard ist `ExtendedEvaluationStrategy`: Steine inkl. Hand, Mühlen, im nächsten Zug schließbare Mühlen, Beweglichkeit und Feldgewichte. `SimpleEvaluationStrategy` bleibt als Vergleich. Gewichte nur nach Testpartien gegen die bisherige Bewertung ändern. `ChoosingStrategy` wählt einen Zug: `SimpleChoosingStrategy` oder `AlphaBetaStrategy(depth, evaluation, timeLimit)`. Letztere ist Negamax mit iterativer Vertiefung, `TranspositionTable` und Zugsortierung (Tabellenzug, Schlagzüge, Killerzüge). Ein Sieg zählt `WIN` minus Halbzüge bis dahin. Jede Strategie bekommt ihre Bewertung im Konstruktor.
 3. **Regeln**: `Rules` erzeugt die legalen Züge und wendet sie an. `GameState` = `Position` + Historie: `play(move)` prüft die Legalität und wechselt den Spieler, `result` liefert `GameResult` (`Ongoing`, `Remis`, `Win`). Remis bei dreifacher Wiederholung oder nach 50 Zügen ohne Schlagen (jeder Spielerzug zählt einzeln).
@@ -68,3 +79,6 @@ Abhängigkeiten nur von oben nach unten:
 - Frontend-Design: Sandsteinplatte auf Moos, Kiesel aus Marmor und Basalt, Ocker nur für das, was eine
   Entscheidung verlangt (Ziele, Auswahl, Mühle). Farben als CSS-Variablen in `styles.css`. Bewegung nur als
   Antwort auf Züge; `prefers-reduced-motion` wird respektiert.
+- E2E-Tests: Selektoren wie ein Nutzer (`getByRole`, zugängliche Namen wie „d6, frei“), keine festen Wartezeiten,
+  Stellungen über die Test-API, Fehler über `page.route`. Bekannte Fehler bleiben mit `test.fail` rot markiert und
+  stehen in `e2e/FINDINGS.md`. Texte in `app.js` ändern heißt E2E-Tests nachziehen.
