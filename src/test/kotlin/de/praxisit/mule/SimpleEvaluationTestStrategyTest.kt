@@ -1,6 +1,5 @@
 package de.praxisit.mule
 
-import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -9,21 +8,17 @@ class SimpleEvaluationTestStrategyTest {
 
     @Test
     fun `evaluate move on empty board`() {
-        val board = Board()
-
-        val points = strategy.evaluate(board)
+        val points = strategy.evaluate(Position())
 
         assertThat(points).isBetween(0.0, 1.0)
     }
 
     @Test
     fun `evaluate move with more white than black stones`() {
-        val board = Board().setStone(0, White)
+        val position = Position(board = Board().setStone(White, 0))
 
-        val points = strategy.evaluate(board)
+        val points = strategy.evaluate(position)
 
         assertThat(points).isBetween(1.0, 2.0)
     }
-
-    private fun Board.setStone(field: Int, color: Color) = setStone(color, field.asFieldIndex)
 }

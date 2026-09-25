@@ -30,15 +30,21 @@ Brettfelder sind mit 0–23 nummeriert:
 21-------22-------23
 ```
 
-- `Board`: unveränderlich. `draw(move)` liefert ein neues Board, `withSwitchedPlayer` wechselt den Spieler. Die Konstanten `MULES`, `CONNECTIONS` und `WEIGHTED_POSITIONS` stehen im Companion.
-- `Move`: sealed. Es gibt `SetMove`, `PushMove`, `JumpMove` und `NoMove`, jeweils optional mit `capturedField`.
-- `Player`: `stones` zählt alle eigenen Steine (auf dem Brett und in der Hand). Die Phase `SETTING → MOVING → JUMPING → LOOSE` wird aus `stones` und `stonesSet` abgeleitet: Bei 3 Steinen wird gesprungen, bei 2 ist das Spiel verloren.
-- Board-Gleichheit ist Stellungsgleichheit ohne Historie. Remis (`isRemis`) bei dreifacher Wiederholung oder nach 50 Zügen ohne Schlagen (`movesWithoutCapture`, jeder Spielerzug zählt einzeln).
-- Strategien per Delegation: `EvaluationStrategy` (positiv = Vorteil Weiß) und `ChoosingStrategy` (`AlphaBetaStrategy(depth = 5)`).
-- `Game.kt` enthält `main()`: Computer gegen Computer oder Mensch gegen Computer über die Konsole.
+## Architektur
+
+Vier Schichten, Abhängigkeiten nur von oben nach unten:
+
+1. **Oberfläche**: `Game` (Spielschleife, `main()`), `ConsoleUi` (Ausgabe, `ConsolePlayer` für menschliche Züge).
+2. **KI**: `EvaluationStrategy` bewertet eine `Position` (positiv = Vorteil Weiß). `ChoosingStrategy` wählt einen Zug: `SimpleChoosingStrategy` oder `AlphaBetaStrategy(depth = 5)` (Negamax). Jede Strategie bekommt ihre Bewertung im Konstruktor.
+3. **Regeln**: `Rules` erzeugt die legalen Züge und wendet sie an. `GameState` = `Position` + Historie: `play(move)` prüft die Legalität und wechselt den Spieler, `result` liefert `GameResult` (`Ongoing`, `Remis`, `Win`). Remis bei dreifacher Wiederholung oder nach 50 Zügen ohne Schlagen (jeder Spielerzug zählt einzeln).
+4. **Modell** (unveränderlich):
+   - `Board`: nur die Steine; `MULES`, `CONNECTIONS`, `WEIGHTED_POSITIONS` im Companion.
+   - `Player`: `stones` zählt alle eigenen Steine (Brett + Hand). Die Phase `SETTING → MOVING → JUMPING → LOOSE` wird abgeleitet: Bei 3 Steinen wird gesprungen, bei 2 ist das Spiel verloren.
+   - `Move`: sealed (`SetMove`, `PushMove`, `JumpMove`), optional mit `capturedField`.
+   - `Position`: Brett, beide Spieler und wer am Zug ist.
 
 ## Konventionen
 
 - Kotlin-Style `official`. Code und Bezeichner auf Englisch.
 - Immutabilität bevorzugen: `copy(...)` statt Mutation, abgeleitete Werte als `by lazy`.
-- Tests: Namen in Backticks, `assertThat`/`assertThatThrownBy` von AssertJ, `@ParameterizedTest` mit `@CsvSource`, `@Nested`.
+- Tests: Namen in Backticks, `assertThat`/`assertThatThrownBy` von AssertJ, `@ParameterizedTest` mit `@CsvSource`, `@Nested`. Testzustände mit `createState(...)` aus `TestStates.kt` bauen, damit sie regelkonform sind.

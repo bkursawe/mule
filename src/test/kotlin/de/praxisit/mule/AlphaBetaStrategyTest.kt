@@ -9,14 +9,15 @@ import kotlin.Double.Companion.NEGATIVE_INFINITY
 import kotlin.Double.Companion.POSITIVE_INFINITY
 
 class AlphaBetaStrategyTest {
+    private val evaluation = SimpleEvaluationStrategy()
 
     @Test
     fun `get move for Black`() {
-        val board = createBoard(listOf(0, 3, 7, 8, 9, 10, 16, 19, 22), 0, listOf(1, 2, 5, 23), 0, Black)
+        val state = createState(listOf(0, 3, 7, 8, 9, 10, 16, 19, 22), 0, listOf(1, 2, 5, 23), 0, Black)
 
-        val move = board.chooseMove()
+        val move = AlphaBetaStrategy().chooseMove(state)
 
-        assertThat(move).isNotEqualTo(NoMove)
+        assertThat(state.legalMoves).contains(move)
     }
 
     @ParameterizedTest
@@ -37,65 +38,48 @@ class AlphaBetaStrategyTest {
         colorName: String
     ) {
         val color = if (colorName == "White") White else Black
-        val board = createBoard(whiteStones.toFields(), whiteStonesToSet, blackStones.toFields(), blackStonesToSet, color)
+        val state = createState(whiteStones.toFields(), whiteStonesToSet, blackStones.toFields(), blackStonesToSet, color)
 
-        val move = AlphaBetaStrategy(DEPTH).chooseMove(board)
+        val move = AlphaBetaStrategy(DEPTH).chooseMove(state)
 
-        assertThat(minimax(board.draw(move).withSwitchedPlayer, DEPTH - 1)).isEqualTo(minimax(board, DEPTH))
+        assertThat(minimax(state.play(move), DEPTH - 1)).isEqualTo(minimax(state, DEPTH))
     }
 
     @Test
     fun `choose a move on a repeated position`() {
-        val board = createRepeatedBoard()
+        val state = createRepeatedState()
 
-        val move = AlphaBetaStrategy(DEPTH).chooseMove(board)
+        val move = AlphaBetaStrategy(DEPTH).chooseMove(state)
 
-        assertThat(board.legalMoves).contains(move)
+        assertThat(state.legalMoves).contains(move)
+    }
+
+    @Test
+    fun `use the given evaluation`() {
+        val prefersField10 = EvaluationStrategy { position ->
+            if (position.board.getStone(10) == White) 1.0 else 0.0
+        }
+
+        val move = AlphaBetaStrategy(1, prefersField10).chooseMove(GameState())
+
+        assertThat(move).isEqualTo(SetMove(White, 10.asFieldIndex))
     }
 
     private fun String.toFields() = split(" ").map { it.toInt() }
 
-    private fun minimax(board: Board, depth: Int): Double = when {
-        board.activePlayer.phase == Phase.LOOSE -> board.activePlayer.worstEvaluation
-        board.isRemis                           -> 0.0
-        depth == 0                              -> board.evaluation
+    // Plain minimax from White's point of view as a reference for the search
+    private fun minimax(state: GameState, depth: Int): Double = when {
+        state.activePlayer.phase == Phase.LOOSE -> if (state.activeColor == White) NEGATIVE_INFINITY else POSITIVE_INFINITY
+        state.isRemis                           -> 0.0
+        depth == 0                              -> evaluation.evaluate(state.position)
         else                                    -> {
-            val values = board.legalMoves.map { minimax(board.draw(it).withSwitchedPlayer, depth - 1) }
-            if (board.activePlayerColor == White) values.maxOrNull() ?: NEGATIVE_INFINITY
+            val values = state.legalMoves.map { minimax(state.play(it), depth - 1) }
+            if (state.activeColor == White) values.maxOrNull() ?: NEGATIVE_INFINITY
             else values.minOrNull() ?: POSITIVE_INFINITY
         }
     }
 
     companion object {
         private const val DEPTH = 3
-
-        fun createBoard(
-            whiteStones: List<Int>,
-            whiteStonesToSet: Int,
-            blackStones: List<Int>,
-            blackStonesToSet: Int,
-            activePlayerColor: Color
-        ): Board {
-            val fields = Array<Field>(24) { _ -> Empty }
-            whiteStones.forEach { fields[it] = White }
-            blackStones.forEach { fields[it] = Black }
-            val white = Player(White, whiteStones.size + whiteStonesToSet, 9 - whiteStonesToSet)
-            val black = Player(Black, blackStones.size + blackStonesToSet, 9 - blackStonesToSet)
-            val board = Board(fields, white, black, activePlayerColor)
-            return board
-        }
-
-        /** Plays White 0↔1 and Black 23↔22 back and forth until the start position occurs for the third time. */
-        fun createRepeatedBoard(): Board {
-            val start = createBoard(listOf(0, 4, 9, 13), 0, listOf(10, 12, 20, 23), 0, White)
-            return (1..2).fold(start) { board, _ -> board.playBackAndForth() }
-        }
-
-        fun Board.playBackAndForth() = listOf(
-            PushMove(White, 0.asFieldIndex, 1.asFieldIndex),
-            PushMove(Black, 23.asFieldIndex, 22.asFieldIndex),
-            PushMove(White, 1.asFieldIndex, 0.asFieldIndex),
-            PushMove(Black, 22.asFieldIndex, 23.asFieldIndex)
-        ).fold(this) { board, move -> board.draw(move).withSwitchedPlayer }
     }
 }

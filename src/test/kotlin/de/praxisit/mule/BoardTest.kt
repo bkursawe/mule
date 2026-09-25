@@ -1,10 +1,7 @@
 package de.praxisit.mule
 
-import de.praxisit.mule.AlphaBetaStrategyTest.Companion.createBoard
-import de.praxisit.mule.AlphaBetaStrategyTest.Companion.playBackAndForth
 import de.praxisit.mule.Board.Companion.COMPLETABLE_MULES
 import de.praxisit.mule.Board.Companion.MULES
-import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
@@ -25,95 +22,6 @@ class BoardTest {
     }
 
     @Nested
-    inner class Draw {
-        @Nested
-        inner class SetMove {
-            @Test
-            fun `draw a simple SetMove`() {
-                val board = Board()
-                val move = SetMove(White, 0.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).containsExactlyInAnyOrder(0.asFieldIndex)
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
-            }
-
-            @Test
-            fun `draw a SetMove with a black capture`() {
-                val board = Board().setStone(White, 0).setStone(White, 1).setStone(Black, 4)
-                val move = SetMove(White, 2.asFieldIndex, 4.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 2)
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
-            }
-
-            @Test
-            fun `draw a SetMove with a white capture`() {
-                val board = Board().setStone(White, 0).setStone(Black, 1).setStone(Black, 4).withSwitchedPlayer
-                val move = SetMove(Black, 7.asFieldIndex, 0.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White)).isEmpty()
-                assertThat(boardAfter.fieldsIndicesWithColor(Black).map { it.index }).containsExactlyInAnyOrder(1, 4, 7)
-            }
-        }
-
-        @Nested
-        inner class PushMove {
-            @Test
-            fun `draw a simple PushMove`() {
-                val board = Board().setStone(White, 9).setStone(White, 1)
-                val move = PushMove(White, 9.asFieldIndex, 0.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1)
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
-            }
-
-            @Test
-            fun `draw a PushMove with a capture`() {
-                val board = Board().setStone(White, 9).setStone(White, 1).setStone(White, 2).setStone(Black, 4)
-                val move = PushMove(White, 9.asFieldIndex, 0.asFieldIndex, 4.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 2)
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
-            }
-        }
-
-        @Nested
-        inner class JumpMove {
-            @Test
-            fun `draw a simple PushMove`() {
-                val board = Board().setStone(White, 22).setStone(White, 1).setStone(White, 3)
-                val move = JumpMove(White, 22.asFieldIndex, 0.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 3)
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
-            }
-
-            @Test
-            fun `draw a PushMove with a capture`() {
-                val board = Board().setStone(White, 22).setStone(White, 1).setStone(White, 2).setStone(Black, 4)
-                val move = JumpMove(White, 22.asFieldIndex, 0.asFieldIndex, 4.asFieldIndex)
-
-                val boardAfter = board.draw(move)
-
-                assertThat(boardAfter.fieldsIndicesWithColor(White).map { it.index }).containsExactlyInAnyOrder(0, 1, 2)
-                assertThat(boardAfter.fieldsIndicesWithColor(Black)).isEmpty()
-            }
-        }
-    }
-
-    @Nested
     inner class SetStone {
         @Test
         fun `set and get stones`() {
@@ -125,6 +33,13 @@ class BoardTest {
             assertThat(board.getStone(8)).isEqualTo(Black)
             assertThat(board.fieldsIndicesWithColor(White).map { it.index }).containsExactly(5)
             assertThat(board.fieldsIndicesWithColor(Black).map { it.index }).containsExactly(8)
+        }
+
+        @Test
+        fun `setting a stone does not change the original board`() {
+            emptyBoard.setStone(White, 5)
+
+            assertThat(emptyBoard.getStone(5)).isEqualTo(Empty)
         }
 
         @Test
@@ -174,6 +89,24 @@ class BoardTest {
 
             assertThatThrownBy { board.moveStone(15, 15) }.isInstanceOf(IllegalArgumentException::class.java)
         }
+    }
+
+    @Test
+    fun `remove a stone`() {
+        val board = emptyBoard.setStones(White, 3, 4)
+
+        val endBoard = board.removeStone(FieldIndex(3))
+
+        assertThat(endBoard.fieldsIndicesWithColor(White).map { it.index }).containsExactly(4)
+    }
+
+    @Test
+    fun `boards with the same stones are equal`() {
+        val board = emptyBoard.setStone(White, 0)
+
+        assertThat(board).isEqualTo(Board().setStone(White, 0))
+        assertThat(board.hashCode()).isEqualTo(Board().setStone(White, 0).hashCode())
+        assertThat(board).isNotEqualTo(board.setStone(Black, 1))
     }
 
     @Nested
@@ -267,218 +200,4 @@ class BoardTest {
         assertThat(board.weightedStonesOnBoard(White)).isEqualTo(6)
         assertThat(board.weightedStonesOnBoard(Black)).isEqualTo(3)
     }
-
-    @Nested
-    inner class Repetition {
-        @Test
-        fun `boards with the same position are equal`() {
-            val board = emptyBoard.setStone(White, 0)
-
-            assertThat(board).isEqualTo(Board().setStone(White, 0))
-            assertThat(board.hashCode()).isEqualTo(Board().setStone(White, 0).hashCode())
-            assertThat(board).isNotEqualTo(board.withSwitchedPlayer)
-            assertThat(board).isNotEqualTo(board.setStone(Black, 1))
-        }
-
-        @Test
-        fun `the third occurrence of a position is a remis`() {
-            val start = createBoard(listOf(0, 4, 9, 13), 0, listOf(10, 12, 20, 23), 0, White)
-
-            val second = start.playBackAndForth()
-            val third = second.playBackAndForth()
-
-            assertThat(second).isEqualTo(start)
-            assertThat(second.isRepeated).isFalse()
-            assertThat(third.isRepeated).isTrue()
-            assertThat(third.isRemis).isTrue()
-            assertThat(third.winner).isEqualTo("It's a remis")
-        }
-    }
-
-    @Nested
-    inner class MovesWithoutCapture {
-        @Test
-        fun `a move without capture increments the counter`() {
-            val board = emptyBoard
-                .draw(SetMove(White, 0.asFieldIndex)).withSwitchedPlayer
-                .draw(SetMove(Black, 1.asFieldIndex)).withSwitchedPlayer
-
-            assertThat(board.movesWithoutCapture).isEqualTo(2)
-        }
-
-        @Test
-        fun `a capture resets the counter`() {
-            val board = emptyBoard.copy(movesWithoutCapture = 10)
-                .setStones(White, 0, 1).setStone(Black, 4)
-
-            val boardAfter = board.draw(SetMove(White, 2.asFieldIndex, 4.asFieldIndex))
-
-            assertThat(boardAfter.movesWithoutCapture).isEqualTo(0)
-        }
-
-        @ParameterizedTest
-        @CsvSource(
-            value = [
-                "48,false",
-                "49,true"
-            ]
-        )
-        fun `the 50th move without capture is a remis`(movesBefore: Int, expectedRemis: Boolean) {
-            val board = createBoard(listOf(0, 4, 9, 13), 0, listOf(10, 12, 20, 23), 0, White)
-                .copy(movesWithoutCapture = movesBefore)
-
-            val boardAfter = board.draw(PushMove(White, 0.asFieldIndex, 1.asFieldIndex)).withSwitchedPlayer
-
-            assertThat(boardAfter.isRemis).isEqualTo(expectedRemis)
-            assertThat(boardAfter.winner).isEqualTo(if (expectedRemis) "It's a remis" else "No winner yet")
-        }
-
-        @Test
-        fun `a game between computer players ends`() {
-            val start = Board(
-                white = Player(White, SimpleEvaluationStrategy()),
-                black = Player(Black, SimpleEvaluationStrategy())
-            )
-
-            val boards = generateSequence(start) { board ->
-                if (board.hasNoLooser && !board.isRemis) board.draw(board.chooseMove()).withSwitchedPlayer else null
-            }.take(1000).count()
-
-            assertThat(boards).isLessThan(1000)
-        }
-    }
-
-    @Nested
-    inner class ChooseMove {
-        inner class TestEvaluationStrategy : EvaluationStrategy {
-            override fun evaluate(board: Board) = when {
-                board.getStone(10) != Empty -> 10.0
-                else                        -> 0.0
-            }
-        }
-
-        @Test
-        fun `choose the player's move`() {
-            val player = Player(White, evaluationStrategy = TestEvaluationStrategy())
-            val board = Board(white = player)
-
-            val move = board.chooseMove()
-
-            assertThat(move.toField.index).isEqualTo(10)
-        }
-    }
-
-    @Nested
-    inner class NoLooser {
-        @Test
-        fun `no current looser`() {
-            val board = Board()
-            assertThat(board.hasNoLooser).isTrue()
-            assertThat(board.winner).isEqualTo("No winner yet")
-        }
-
-        @Test
-        fun `white has no moves`() {
-            val white = Player(White, 4, 9)
-            val black = Player(Black, 4, 9)
-            val board = Board(white = white, black = black).setStone(White, 0).setStone(White, 1).setStone(White, 2)
-                .setStone(White, 9)
-                .setStone(Black, 4).setStone(Black, 10).setStone(Black, 14).setStone(Black, 21)
-
-            assertThat(board.hasNoLooser).isFalse()
-            assertThat(board.winner).isEqualTo("Black is the winner")
-        }
-
-        @Test
-        fun `black has no moves`() {
-            val white = Player(White, 4, 9)
-            val black = Player(Black, 4, 9)
-            val board =
-                Board(white = white, black = black, activePlayerColor = Black).setStone(Black, 0).setStone(Black, 1)
-                    .setStone(Black, 2).setStone(Black, 9)
-                    .setStone(White, 4).setStone(White, 10).setStone(White, 14).setStone(White, 21)
-
-            assertThat(board.hasNoLooser).isFalse()
-            assertThat(board.winner).isEqualTo("White is the winner")
-        }
-    }
-
-    @Nested
-    inner class PrintBoard {
-        @Test
-        fun `draw empty board`() {
-            val output = emptyBoard.printedBoard
-            val expected = """
-                O--------O--------O
-                |        |        |
-                |  O-----O-----O  |
-                |  |     |     |  |
-                |  |  O--O--O  |  |
-                |  |  |     |  |  |
-                O--O--O     O--O--O
-                |  |  |     |  |  |
-                |  |  O--O--O  |  |
-                |  |     |     |  |
-                |  O-----O-----O  |
-                |        |        |
-                O--------O--------O
-                * White: stones = 9 phase = SETTING
-                  Black: stones = 9 phase = SETTING
-                Evaluation: 0.0
-
-            """.trimIndent()
-
-            assertThat(output)
-                .hasSameSizeAs(expected)
-                .isEqualToIgnoringWhitespace(expected)
-        }
-
-        @Test
-        fun `draw board with some stones`() {
-            val board = emptyBoard
-                .setStone(White, 3)
-                .setStone(White, 4)
-                .setStone(Black, 5)
-            val output = board.printedBoard
-            val expected = """
-                O--------O--------O
-                |        |        |
-                |  W-----W-----B  |
-                |  |     |     |  |
-                |  |  O--O--O  |  |
-                |  |  |     |  |  |
-                O--O--O     O--O--O
-                |  |  |     |  |  |
-                |  |  O--O--O  |  |
-                |  |     |     |  |
-                |  O-----O-----O  |
-                |        |        |
-                O--------O--------O
-                * White: stones = 9 phase = SETTING
-                  Black: stones = 9 phase = SETTING
-                Evaluation: 4.0
-
-            """.trimIndent()
-
-            assertThat(output)
-                .hasSameSizeAs(expected)
-                .isEqualToIgnoringWhitespace(expected)
-        }
-    }
-
-    @Test
-    fun `board change player`() {
-        assertThat(emptyBoard.activePlayerColor).isEqualTo(White)
-        val board1 = emptyBoard.withSwitchedPlayer
-        assertThat(board1.activePlayerColor).isEqualTo(Black)
-        val board2 = board1.withSwitchedPlayer
-        assertThat(board2.activePlayerColor).isEqualTo(White)
-    }
-
-    private fun Board.setStone(color: Color, field: Int) = setStone(color, field.asFieldIndex)
-    private fun Board.setStones(color: Color, vararg fields: Int) =
-        fields.fold(this) { board, field -> board.setStone(color, field) }
-
-    private fun Board.getStone(field: Int) = getStone(field.asFieldIndex)
-    private fun Board.moveStone(from: Int, to: Int) = moveStone(from.asFieldIndex, to.asFieldIndex)
 }

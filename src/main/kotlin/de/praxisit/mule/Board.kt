@@ -1,8 +1,6 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
-import de.praxisit.mule.Phase.LOOSE
-import java.util.Objects
 
 //
 //   0--------1--------2
@@ -19,23 +17,14 @@ import java.util.Objects
 //   |        |        |
 //  21-------22-------23
 //
-class Board(
-    private val fields: Array<Field> = Array(24) { _ -> Empty },
-    private val white: Player = Player(White),
-    private val black: Player = Player(Black),
-    internal val activePlayerColor: Color = White,
-    private val history: List<Board> = emptyList(),
-    val movesWithoutCapture: Int = 0
-) {
+/**
+ * The stones on the 24 fields. A board is immutable: every change returns a new board.
+ */
+class Board private constructor(private val fields: Array<Field>) {
 
-    fun copy(
-        fields: Array<Field> = this.fields,
-        white: Player = this.white,
-        black: Player = this.black,
-        activePlayerColor: Color = this.activePlayerColor,
-        history: List<Board> = this.history,
-        movesWithoutCapture: Int = this.movesWithoutCapture
-    ) = Board(fields, white, black, activePlayerColor, history, movesWithoutCapture)
+    constructor() : this(Array(FieldIndex.SIZE) { _ -> Empty })
+
+    fun getStone(field: FieldIndex): Field = fields[field.index]
 
     fun fieldsIndicesWithColor(color: Color) =
         fields.withIndex().filter { it.value == color }.map { it.index.asFieldIndex }.toSet()
@@ -44,126 +33,27 @@ class Board(
         fields.withIndex().filter { it.value == Empty }.map { it.index.asFieldIndex }.toSet()
     }
 
-    fun draw(move: Move): Board {
-        var board = copy(
-            history = history + this,
-            movesWithoutCapture = if (move.isCaptureMove) 0 else movesWithoutCapture + 1
-        )
-        if (move is SetMove) board = board.playerSetStone()
+    fun setStone(color: Color, field: FieldIndex) = withField(field, color)
 
-        board = when (move) {
-            is SetMove -> board.setStone(move.color, move.toField)
-            is PushMove -> board.moveStone(move.fromField, move.toField)
-            is JumpMove -> board.moveStone(move.fromField, move.toField)
-            is NoMove  -> throw IllegalMoveException(NoMove, "Cannot move")
-        }
-
-        if (move.capturedField != null) board = board.playerLooseStone().removeStone(move.capturedField)
-        return board
-    }
-
-    val activePlayer: Player by lazy { if (activePlayerColor == White) white else black }
-
-    val legalMoves: List<Move> by lazy { activePlayer.legalMoves(this) }
-
-    val evaluation: Double by lazy { activePlayer.evaluate(this) }
-
-    private fun playerLooseStone() = if (activePlayerColor == White)
-        copy(black = black.loseStone())
-    else
-        copy(white = white.loseStone())
-
-    private fun playerSetStone() = if (activePlayerColor == White)
-        copy(white = white.setStone())
-    else
-        copy(black = black.setStone())
-
-    internal val withSwitchedPlayer: Board by lazy { copy(activePlayerColor = activePlayerColor.opposite) }
-
-    fun setStone(color: Color, index: FieldIndex): Board {
-        val board = copy(fields = fields.copyOf())
-        board.fields[index.index] = color
-        return board
-    }
-
-    private fun removeStone(field: FieldIndex): Board {
-        val board = copy(fields = fields.copyOf())
-        board.fields[field.index] = Empty
-        return board
-    }
-
-    fun getStone(field: FieldIndex): Field {
-        return fields[field.index]
-    }
+    fun removeStone(field: FieldIndex) = withField(field, Empty)
 
     fun moveStone(fromIndex: FieldIndex, toIndex: FieldIndex): Board {
         require(fields[fromIndex.index] != Empty)
         require(fields[toIndex.index] == Empty)
 
-        val board = copy(fields = fields.copyOf())
-        board.fields[toIndex.index] = fields[fromIndex.index]
-        board.fields[fromIndex.index] = Empty
-        return board
+        val newFields = fields.copyOf()
+        newFields[toIndex.index] = fields[fromIndex.index]
+        newFields[fromIndex.index] = Empty
+        return Board(newFields)
+    }
+
+    private fun withField(field: FieldIndex, value: Field): Board {
+        val newFields = fields.copyOf()
+        newFields[field.index] = value
+        return Board(newFields)
     }
 
     fun connectedEmptyFields(field: FieldIndex) = CONNECTIONS[field.index].filter { fields[it.index] == Empty }
-
-    fun chooseMove() = activePlayer.chooseMove(this)
-
-    val isRepeated: Boolean by lazy { history.count { it == this } >= 2 }
-
-    val isRemis get() = movesWithoutCapture >= MOVES_WITHOUT_CAPTURE_FOR_REMIS || isRepeated
-
-    // Boards are equal if they have the same position, the history is ignored
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Board || hashCode() != other.hashCode()) return false
-        return activePlayerColor == other.activePlayerColor &&
-                white.stones == other.white.stones && white.stonesSet == other.white.stonesSet &&
-                black.stones == other.black.stones && black.stonesSet == other.black.stonesSet &&
-                fields.contentEquals(other.fields)
-    }
-
-    override fun hashCode() = positionHash
-
-    private val positionHash: Int by lazy {
-        Objects.hash(
-            activePlayerColor,
-            white.stones,
-            white.stonesSet,
-            black.stones,
-            black.stonesSet,
-            fields.contentHashCode()
-        )
-    }
-
-    private fun f(index: Int) = when (fields[index]) {
-        Empty -> "O"
-        White -> "W"
-        Black -> "B"
-    }
-
-    val printedBoard: String by lazy {
-        """
-             ${f(0)}--------${f(1)}--------${f(2)}
-             |        |        |
-             |  ${f(3)}-----${f(4)}-----${f(5)}  |
-             |  |     |     |  |
-             |  |  ${f(6)}--${f(7)}--${f(8)}  |  |
-             |  |  |     |  |  |
-             ${f(9)}--${f(10)}--${f(11)}     ${f(12)}--${f(13)}--${f(14)}
-             |  |  |     |  |  |
-             |  |  ${f(15)}--${f(16)}--${f(17)}  |  |
-             |  |     |     |  |
-             |  ${f(18)}-----${f(19)}-----${f(20)}  |
-             |        |        |
-             ${f(21)}--------${f(22)}--------${f(23)}
-             ${if (activePlayer == white) "*" else " "} White: stones = ${white.stones} phase = ${white.phase}
-             ${if (activePlayer == black) "*" else " "} Black: stones = ${black.stones} phase = ${black.phase}
-             Evaluation: $evaluation
-             
-        """.trimIndent()
-    }
 
     // Stones in a mule may only be captured if every stone is in a mule
     fun capturablePieces(color: Color): Set<FieldIndex> {
@@ -193,27 +83,22 @@ class Board(
 
     fun muleCount(color: Color) = MULES.count { mule -> mule.all { field -> field.asField == color } }
 
+    fun weightedStonesOnBoard(color: Color) = fields.indices.filter { fields[it] == color }.sumOf { WEIGHTED_POSITIONS[it] }
+
     private val Int.asField: Field
         get() = fields[this]
 
     private val FieldIndex.asField: Field
         get() = fields[this.index]
 
-    val winner
-        get() = when {
-            white.phase == LOOSE || white.legalMoves(this).isEmpty() -> "Black is the winner"
-            black.phase == LOOSE || black.legalMoves(this).isEmpty() -> "White is the winner"
-            isRemis                                                  -> "It's a remis"
-            else                                                     -> "No winner yet"
-        }
+    override fun equals(other: Any?) =
+        this === other || other is Board && hashCode() == other.hashCode() && fields.contentEquals(other.fields)
 
-    val hasNoLooser get() = white.phase != LOOSE && black.phase != LOOSE && activePlayer.legalMoves(this).isNotEmpty()
+    override fun hashCode() = fieldsHash
 
-    fun weightedStonesOnBoard(color: Color) = fields.indices.filter { fields[it] == color }.sumOf { WEIGHTED_POSITIONS[it] }
+    private val fieldsHash: Int by lazy { fields.contentHashCode() }
 
     companion object {
-        const val MOVES_WITHOUT_CAPTURE_FOR_REMIS = 50
-
         val MULES = arrayOf(
             listOf(0, 1, 2),
             listOf(3, 4, 5),

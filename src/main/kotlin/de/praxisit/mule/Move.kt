@@ -1,7 +1,6 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.Board.Companion.CONNECTIONS
-import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 
 @Suppress("kotlin:S1192")
 sealed class Move(val color: Color, val toField: FieldIndex, val capturedField: FieldIndex?) {
@@ -9,12 +8,6 @@ sealed class Move(val color: Color, val toField: FieldIndex, val capturedField: 
 
     val isCaptureMove: Boolean
         get() = capturedField != null
-}
-
-data object NoMove : Move(White, 0.asFieldIndex, null) {
-    override fun addCaptureField(field: FieldIndex): Move {
-        throw IllegalStateException("Cannot add a capture to NoMove")
-    }
 }
 
 private const val CAPTURE_FIELD_EQUAL_TO_FIELD = "field == toField"

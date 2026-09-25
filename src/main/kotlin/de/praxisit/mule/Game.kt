@@ -1,68 +1,42 @@
 package de.praxisit.mule
 
-import java.util.*
-
+import de.praxisit.mule.GameResult.Ongoing
 
 fun main() {
-    Game().startComputer()
+    Game(white = AlphaBetaStrategy(), black = AlphaBetaStrategy()).play()
 }
 
-class Game {
-    private var board = Board()
-    private var drawNumber = 0
-
-    fun startComputer() {
-        while (board.hasNoLooser && !board.isRemis) {
-            println(board.printedBoard)
-            val move = board.chooseMove()
-            print("${drawNumber++}: ")
-            println(move)
-            board = board.draw(move).withSwitchedPlayer
+/**
+ * Plays a game between two players and prints it on the console.
+ */
+class Game(
+    private val white: ChoosingStrategy,
+    private val black: ChoosingStrategy,
+    private val evaluation: EvaluationStrategy = SimpleEvaluationStrategy()
+) {
+    fun play(): GameResult {
+        var state = GameState()
+        var moveNumber = 0
+        while (state.result == Ongoing) {
+            printState(state)
+            val move = player(state.activeColor).chooseMove(state)
+            println("${moveNumber++}: $move")
+            state = state.play(move)
         }
-        println(board.printedBoard)
-        println(board.winner)
-
+        printState(state)
+        println(ConsoleUi.format(state.result))
+        return state.result
     }
 
-    fun startHuman() {
-        val humanColor = askColor()
+    private fun player(color: Color) = if (color == White) white else black
 
-        while (board.hasNoLooser && !board.isRemis) {
-            println(board.printedBoard)
-            val move = if (board.activePlayerColor == humanColor) {
-                chooseMove(board)
-            } else {
-                board.chooseMove()
-            }
-            print("${drawNumber++}: ")
-            println(move)
-            board = board.draw(move).withSwitchedPlayer
-        }
-        println(board.printedBoard)
-        println(board.winner)
-    }
+    private fun printState(state: GameState) = println(ConsoleUi.format(state, evaluation.evaluate(state.position)))
 
-    private fun chooseMove(board: Board): Move {
-        val moves = board.activePlayer.legalMoves(board)
-        if (moves.isEmpty()) return NoMove
-
-        moves.mapIndexed { index, move -> "$index: $move" }.forEach { println(it) }
-        println("Choose a move by number: ")
-        var answer = readln()
-        while (answer.toIntOrNull() !in moves.indices) {
-            println("Choose a move by number (0 .. ${moves.size}): ")
-            answer = readln()
-        }
-        return moves[answer.toInt()]
-    }
-
-    private fun askColor(): Color {
-        print("Do you want to play with (W)hite or (B)lack? ")
-        val colorInput = readln()
-        return when (colorInput.lowercase(Locale.getDefault())) {
-            "w", "white" -> White
-            "b", "black" -> Black
-            else         -> throw IllegalArgumentException("Invalid color input")
+    companion object {
+        fun humanAgainstComputer(): Game = if (ConsoleUi.askColor() == White) {
+            Game(white = ConsolePlayer(), black = AlphaBetaStrategy())
+        } else {
+            Game(white = AlphaBetaStrategy(), black = ConsolePlayer())
         }
     }
 }

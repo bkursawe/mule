@@ -4,83 +4,69 @@ import de.praxisit.mule.Phase.LOOSE
 import kotlin.Double.Companion.NEGATIVE_INFINITY
 import kotlin.Double.Companion.POSITIVE_INFINITY
 
+/**
+ * Chooses a move for the active player of a game that is not finished yet.
+ */
 fun interface ChoosingStrategy {
-    fun chooseMove(board: Board): Move
+    fun chooseMove(state: GameState): Move
 }
 
-class SimpleChoosingStrategy : ChoosingStrategy {
-    override fun chooseMove(board: Board): Move {
-        val evaluation = { move: Move -> board.draw(move).evaluation }
-        return if (board.activePlayerColor == White) {
-            board.legalMoves.maxByOrNull(evaluation)
+/**
+ * Chooses the move with the best evaluation after one move.
+ */
+class SimpleChoosingStrategy(
+    private val evaluation: EvaluationStrategy = SimpleEvaluationStrategy()
+) : ChoosingStrategy {
+    override fun chooseMove(state: GameState): Move {
+        val score = { move: Move -> evaluation.evaluate(state.play(move).position) }
+        val move = if (state.activeColor == White) {
+            state.legalMoves.maxByOrNull(score)
         } else {
-            board.legalMoves.minByOrNull(evaluation)
-        } ?: NoMove
+            state.legalMoves.minByOrNull(score)
+        }
+        return checkNotNull(move) { "No legal move" }
     }
 }
 
-class AlphaBetaStrategy(private val depth: Int = 5) : ChoosingStrategy {
+/**
+ * Searches [depth] moves ahead with Negamax and alpha-beta pruning.
+ * All scores are seen from the player to move.
+ */
+class AlphaBetaStrategy(
+    private val depth: Int = 5,
+    private val evaluation: EvaluationStrategy = SimpleEvaluationStrategy()
+) : ChoosingStrategy {
     // The root is searched without the terminal checks, so a legal move is returned whenever one exists
-    override fun chooseMove(board: Board) = bestMove(board, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY).first
-
-    private fun alphaBeta(board: Board, depth: Int, alpha: Double, beta: Double): Pair<Move, Double> {
-        if (board.activePlayer.phase == LOOSE) return Pair(NoMove, board.activePlayer.worstEvaluation)
-        if (board.isRemis) return Pair(NoMove, 0.0)
-        if (depth == 0) return Pair(NoMove, board.evaluation)
-
-        return bestMove(board, depth, alpha, beta)
+    override fun chooseMove(state: GameState): Move {
+        val (move, _) = bestMove(state, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY)
+        return checkNotNull(move) { "No legal move" }
     }
 
-    private fun bestMove(board: Board, depth: Int, alpha: Double, beta: Double): Pair<Move, Double> =
-        if (board.activePlayer.color == White) {
-            bestMoveForWhite(board, depth, alpha, beta)
-        } else {
-            bestMoveForBlack(board, depth, alpha, beta)
-        }
+    private fun negamax(state: GameState, depth: Int, alpha: Double, beta: Double): Double = when {
+        state.activePlayer.phase == LOOSE -> NEGATIVE_INFINITY
+        state.isRemis                     -> 0.0
+        depth == 0                        -> state.activeColor.sign * evaluation.evaluate(state.position)
+        else                              -> bestMove(state, depth, alpha, beta).second
+    }
 
-    private fun bestMoveForWhite(
-        board: Board,
-        depth: Int,
-        alpha: Double,
-        beta: Double
-    ): Pair<Move, Double> {
-        var bestMove: Move = NoMove
-        var maxEval = Double.NEGATIVE_INFINITY
+    private fun bestMove(state: GameState, depth: Int, alpha: Double, beta: Double): Pair<Move?, Double> {
+        var bestMove: Move? = null
+        var bestScore = NEGATIVE_INFINITY
         var currentAlpha = alpha
-        for (move in board.legalMoves) {
-            val (_, eval) = alphaBeta(board.draw(move).withSwitchedPlayer, depth - 1, currentAlpha, beta)
-            if (eval > maxEval || bestMove == NoMove) {
-                maxEval = eval
+        for (move in state.legalMoves) {
+            val score = -negamax(state.play(move), depth - 1, -beta, -currentAlpha)
+            if (score > bestScore || bestMove == null) {
+                bestScore = score
                 bestMove = move
             }
-            currentAlpha = maxOf(currentAlpha, eval)
-            if (beta <= currentAlpha) {
+            currentAlpha = maxOf(currentAlpha, score)
+            if (currentAlpha >= beta) {
                 break
             }
         }
-        return Pair(bestMove, maxEval)
+        return Pair(bestMove, bestScore)
     }
 
-    private fun bestMoveForBlack(
-        board: Board,
-        depth: Int,
-        alpha: Double,
-        beta: Double
-    ): Pair<Move, Double> {
-        var bestMove: Move = NoMove
-        var minEval = Double.POSITIVE_INFINITY
-        var currentBeta = beta
-        for (move in board.legalMoves) {
-            val (_, eval) = alphaBeta(board.draw(move).withSwitchedPlayer, depth - 1, alpha, currentBeta)
-            if (eval < minEval || bestMove == NoMove) {
-                minEval = eval
-                bestMove = move
-            }
-            currentBeta = minOf(currentBeta, eval)
-            if (currentBeta <= alpha) {
-                break
-            }
-        }
-        return Pair(bestMove, minEval)
-    }
+    private val Color.sign: Double
+        get() = if (this == White) 1.0 else -1.0
 }

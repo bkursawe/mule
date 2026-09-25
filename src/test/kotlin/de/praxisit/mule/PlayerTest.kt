@@ -1,6 +1,5 @@
 package de.praxisit.mule
 
-import de.praxisit.mule.FieldIndex.Companion.asFieldIndex
 import de.praxisit.mule.Phase.JUMPING
 import de.praxisit.mule.Phase.LOOSE
 import de.praxisit.mule.Phase.MOVING
@@ -107,102 +106,4 @@ class PlayerTest {
         assertThat(player.phase).isEqualTo(JUMPING)
         assertThat(player.loseStone().phase).isEqualTo(LOOSE)
     }
-
-    @Nested
-    inner class LegalMoves {
-        @Nested
-        inner class SettingMoves {
-            @Test
-            fun `setting on an empty board`() {
-                val player = Player(White)
-                val board = Board()
-
-                val moves = player.legalMoves(board)
-
-                assertThat(moves).hasSize(24)
-                    .hasOnlyElementsOfType(SetMove::class.java)
-                    .extracting(Move::color).containsOnly(White)
-            }
-
-            @Test
-            fun `setting on a board with some stones of one color`() {
-                val player = Player(Black)
-                val board = Board().setStone(3, Black).setStone(4, Black).setStone(5, Black)
-
-                val moves = player.legalMoves(board)
-
-                assertThat(moves).hasSize(21)
-                    .hasOnlyElementsOfType(SetMove::class.java)
-                    .extracting(Move::color).containsOnly(Black)
-            }
-
-            @Test
-            fun `setting on a board with some stones of different colors`() {
-                val player = Player(Black)
-                val board = Board().setStone(3, Black).setStone(4, White).setStone(5, Black)
-
-                val moves = player.legalMoves(board)
-
-                assertThat(moves).hasSize(21)
-                    .hasOnlyElementsOfType(SetMove::class.java)
-                    .extracting(Move::color).containsOnly(Black)
-            }
-        }
-
-        @Nested
-        inner class JumpingMoves {
-            @Test
-            fun `a player with 3 stones on an otherwise empty board`() {
-                val white = Player(White, stones = 3, stonesSet = 9)
-                val board = Board().setStone(6, White).setStone(7, White).setStone(8, White)
-
-                val moves = white.legalMoves(board)
-
-                assertThat(moves)
-                    .hasSize(63)
-                    .hasOnlyElementsOfType(JumpMove::class.java)
-                    .extracting(Move::color)
-                    .containsOnly(White)
-            }
-
-            @Test
-            fun `a player with 3 stones on a board with other stones`() {
-                val white = Player(White, stones = 3, stonesSet = 9)
-                val board = Board().setStone(6, White).setStone(7, White).setStone(8, White)
-                    .setStone(21, Black).setStone(22, Black).setStone(23, Black)
-
-                val moves = white.legalMoves(board)
-
-                assertThat(moves)
-                    .hasSize(54)
-                    .hasOnlyElementsOfType(JumpMove::class.java)
-                    .extracting(Move::color)
-                    .containsOnly(White)
-            }
-        }
-
-        @Nested
-        inner class CaptureMoves {
-            @Test
-            fun `capture from a mule if all opponent stones are in mules`() {
-                val board = Board().setStone(0, White).setStone(1, White)
-                    .setStone(3, Black).setStone(4, Black).setStone(5, Black)
-
-                val moves = Player(White).legalMoves(board).filter { it.toField.index == 2 }
-
-                assertThat(moves.map { it.capturedField?.index }).containsExactlyInAnyOrder(3, 4, 5)
-            }
-
-            @Test
-            fun `close a mule without capture if the opponent has no stones on the board`() {
-                val board = Board().setStone(0, White).setStone(1, White)
-
-                val moves = Player(White).legalMoves(board).filter { it.toField.index == 2 }
-
-                assertThat(moves).containsExactly(SetMove(White, 2.asFieldIndex))
-            }
-        }
-    }
-
-    private fun Board.setStone(field: Int, color: Color) = setStone(color, field.asFieldIndex)
 }
