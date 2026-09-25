@@ -24,7 +24,8 @@ class Board(
     private val white: Player = Player(White),
     private val black: Player = Player(Black),
     internal val activePlayerColor: Color = White,
-    private val history: List<Board> = emptyList()
+    private val history: List<Board> = emptyList(),
+    val movesWithoutCapture: Int = 0
 ) {
 
     fun copy(
@@ -32,8 +33,9 @@ class Board(
         white: Player = this.white,
         black: Player = this.black,
         activePlayerColor: Color = this.activePlayerColor,
-        history: List<Board> = this.history
-    ) = Board(fields, white, black, activePlayerColor, history)
+        history: List<Board> = this.history,
+        movesWithoutCapture: Int = this.movesWithoutCapture
+    ) = Board(fields, white, black, activePlayerColor, history, movesWithoutCapture)
 
     fun fieldsIndicesWithColor(color: Color) =
         fields.withIndex().filter { it.value == color }.map { it.index.asFieldIndex }.toSet()
@@ -43,7 +45,10 @@ class Board(
     }
 
     fun draw(move: Move): Board {
-        var board = copy(history = history + this)
+        var board = copy(
+            history = history + this,
+            movesWithoutCapture = if (move.isCaptureMove) 0 else movesWithoutCapture + 1
+        )
         if (move is SetMove) board = board.playerSetStone()
 
         board = when (move) {
@@ -106,6 +111,8 @@ class Board(
     fun chooseMove() = activePlayer.chooseMove(this)
 
     val isRepeated: Boolean by lazy { history.count { it == this } >= 2 }
+
+    val isRemis get() = movesWithoutCapture >= MOVES_WITHOUT_CAPTURE_FOR_REMIS || isRepeated
 
     // Boards are equal if they have the same position, the history is ignored
     override fun equals(other: Any?): Boolean {
@@ -196,7 +203,7 @@ class Board(
         get() = when {
             white.phase == LOOSE || white.legalMoves(this).isEmpty() -> "Black is the winner"
             black.phase == LOOSE || black.legalMoves(this).isEmpty() -> "White is the winner"
-            isRepeated                                               -> "It's a remis"
+            isRemis                                                  -> "It's a remis"
             else                                                     -> "No winner yet"
         }
 
@@ -205,6 +212,8 @@ class Board(
     fun weightedStonesOnBoard(color: Color) = fields.indices.filter { fields[it] == color }.sumOf { WEIGHTED_POSITIONS[it] }
 
     companion object {
+        const val MOVES_WITHOUT_CAPTURE_FOR_REMIS = 50
+
         val MULES = arrayOf(
             listOf(0, 1, 2),
             listOf(3, 4, 5),

@@ -25,7 +25,7 @@ class AlphaBetaStrategy(private val depth: Int = 5) : ChoosingStrategy {
 
     private fun alphaBeta(board: Board, depth: Int, alpha: Double, beta: Double): Pair<Move, Double> {
         if (board.activePlayer.phase == LOOSE) return Pair(NoMove, board.activePlayer.worstEvaluation)
-        if (board.isRepeated) return Pair(NoMove, 0.0)
+        if (board.isRemis) return Pair(NoMove, 0.0)
         if (depth == 0) return Pair(NoMove, board.evaluation)
 
         return bestMove(board, depth, alpha, beta)

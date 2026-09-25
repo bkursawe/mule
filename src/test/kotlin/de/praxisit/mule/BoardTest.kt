@@ -290,7 +290,61 @@ class BoardTest {
             assertThat(second).isEqualTo(start)
             assertThat(second.isRepeated).isFalse()
             assertThat(third.isRepeated).isTrue()
+            assertThat(third.isRemis).isTrue()
             assertThat(third.winner).isEqualTo("It's a remis")
+        }
+    }
+
+    @Nested
+    inner class MovesWithoutCapture {
+        @Test
+        fun `a move without capture increments the counter`() {
+            val board = emptyBoard
+                .draw(SetMove(White, 0.asFieldIndex)).withSwitchedPlayer
+                .draw(SetMove(Black, 1.asFieldIndex)).withSwitchedPlayer
+
+            assertThat(board.movesWithoutCapture).isEqualTo(2)
+        }
+
+        @Test
+        fun `a capture resets the counter`() {
+            val board = emptyBoard.copy(movesWithoutCapture = 10)
+                .setStones(White, 0, 1).setStone(Black, 4)
+
+            val boardAfter = board.draw(SetMove(White, 2.asFieldIndex, 4.asFieldIndex))
+
+            assertThat(boardAfter.movesWithoutCapture).isEqualTo(0)
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            value = [
+                "48,false",
+                "49,true"
+            ]
+        )
+        fun `the 50th move without capture is a remis`(movesBefore: Int, expectedRemis: Boolean) {
+            val board = createBoard(listOf(0, 4, 9, 13), 0, listOf(10, 12, 20, 23), 0, White)
+                .copy(movesWithoutCapture = movesBefore)
+
+            val boardAfter = board.draw(PushMove(White, 0.asFieldIndex, 1.asFieldIndex)).withSwitchedPlayer
+
+            assertThat(boardAfter.isRemis).isEqualTo(expectedRemis)
+            assertThat(boardAfter.winner).isEqualTo(if (expectedRemis) "It's a remis" else "No winner yet")
+        }
+
+        @Test
+        fun `a game between computer players ends`() {
+            val start = Board(
+                white = Player(White, SimpleEvaluationStrategy()),
+                black = Player(Black, SimpleEvaluationStrategy())
+            )
+
+            val boards = generateSequence(start) { board ->
+                if (board.hasNoLooser && !board.isRemis) board.draw(board.chooseMove()).withSwitchedPlayer else null
+            }.take(1000).count()
+
+            assertThat(boards).isLessThan(1000)
         }
     }
 

@@ -12,7 +12,7 @@ class Game {
     private var drawNumber = 0
 
     fun startComputer() {
-        while (board.hasNoLooser && !board.isRepeated) {
+        while (board.hasNoLooser && !board.isRemis) {
             println(board.printedBoard)
             val move = board.chooseMove()
             print("${drawNumber++}: ")
@@ -27,7 +27,7 @@ class Game {
     fun startHuman() {
         val humanColor = askColor()
 
-        while (board.hasNoLooser && !board.isRepeated) {
+        while (board.hasNoLooser && !board.isRemis) {
             println(board.printedBoard)
             val move = if (board.activePlayerColor == humanColor) {
                 chooseMove(board)

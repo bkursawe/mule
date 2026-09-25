@@ -33,7 +33,7 @@ Brettfelder sind mit 0–23 nummeriert:
 - `Board`: unveränderlich. `draw(move)` liefert ein neues Board, `withSwitchedPlayer` wechselt den Spieler. Die Konstanten `MULES`, `CONNECTIONS` und `WEIGHTED_POSITIONS` stehen im Companion.
 - `Move`: sealed. Es gibt `SetMove`, `PushMove`, `JumpMove` und `NoMove`, jeweils optional mit `capturedField`.
 - `Player`: `stones` zählt alle eigenen Steine (auf dem Brett und in der Hand). Die Phase `SETTING → MOVING → JUMPING → LOOSE` wird aus `stones` und `stonesSet` abgeleitet: Bei 3 Steinen wird gesprungen, bei 2 ist das Spiel verloren.
-- Board-Gleichheit ist Stellungsgleichheit ohne Historie. Bei dreifacher Wiederholung (`isRepeated`) ist das Spiel remis.
+- Board-Gleichheit ist Stellungsgleichheit ohne Historie. Remis (`isRemis`) bei dreifacher Wiederholung oder nach 50 Zügen ohne Schlagen (`movesWithoutCapture`, jeder Spielerzug zählt einzeln).
 - Strategien per Delegation: `EvaluationStrategy` (positiv = Vorteil Weiß) und `ChoosingStrategy` (`AlphaBetaStrategy(depth = 5)`).
 - `Game.kt` enthält `main()`: Computer gegen Computer oder Mensch gegen Computer über die Konsole.
 

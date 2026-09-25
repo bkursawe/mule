@@ -57,7 +57,7 @@ class AlphaBetaStrategyTest {
 
     private fun minimax(board: Board, depth: Int): Double = when {
         board.activePlayer.phase == Phase.LOOSE -> board.activePlayer.worstEvaluation
-        board.isRepeated                        -> 0.0
+        board.isRemis                           -> 0.0
         depth == 0                              -> board.evaluation
         else                                    -> {
             val values = board.legalMoves.map { minimax(board.draw(it).withSwitchedPlayer, depth - 1) }
