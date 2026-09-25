@@ -127,16 +127,25 @@ test.describe('Server- und Netzwerkfehler', () => {
     await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
   });
 
-  test('eine unlesbare Antwort des Servers führt zu einer Fehlermeldung statt zu einem eingefrorenen Brett', async ({ mule }) => {
-    test.fail(true, 'F-01: Die Oberfläche stürzt bei einer Antwort ohne gültiges JSON ab, siehe FINDINGS.md');
-    await mule.openNewGame();
-    await mule.page.route('**/moves', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: 'kein json' }));
+  // F-01: such an answer used to replace the game and freeze the board
+  for (const [what, body] of [['ohne gültiges JSON', 'kein json'], ['mit JSON, aber ohne Spiel', '{"ok":true}']]) {
+    test(`eine Antwort ${what} führt zu einer Fehlermeldung, und das Brett bleibt bedienbar`, async ({ mule }) => {
+      const errors: Error[] = [];
+      mule.page.on('pageerror', (error) => errors.push(error));
+      await mule.openNewGame();
+      await mule.page.route('**/moves', (route) => route.fulfill({ status: 200, contentType: 'application/json', body }));
 
-    await mule.field('d6').click();
+      await mule.field('d6').click();
 
-    await expect(mule.status).toContainText('Der Zug wurde nicht angenommen.', { timeout: 3000 });
-  });
+      await expect(mule.status).toContainText('Der Zug wurde nicht angenommen.');
+      await mule.expectStone('d6', 'frei');
+      await mule.page.unroute('**/moves');
+      await mule.field('d6').click();
+      await mule.expectStone('d6', 'weißer Stein');
+      await mule.expectHumanTurn();
+      expect(errors).toEqual([]);
+    });
+  }
 });
 
 test.describe('Browser', () => {

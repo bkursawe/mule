@@ -9,25 +9,25 @@ mit der Spiel-API
 Die Hauptabläufe halten: Setzen, Ziehen, Springen, Schlagen, alle Spielenden mit ihrem Grund, Neuladen und
 Tastaturbedienung. Doppelte und verspätete Eingaben lösen keinen zweiten Zug aus; Serverfehler, Abbrüche, 404 und
 409 führen zu einer verständlichen Meldung, ohne dass das Brett einen falschen Stand zeigt. Die einzige echte Schwäche
-im Code ist eine Serverantwort mit Status 200, aber ohne gültiges JSON: Dann friert das Brett ein und behauptet
-weiter „Du bist am Zug“. Dazu kam eine Regelfrage zur 50-Züge-Regel, inzwischen zugunsten der Turnierregel entschieden.
+im Code war eine Serverantwort mit Status 200, aber ohne gültiges JSON: Dann fror das Brett ein und behauptete
+weiter „Du bist am Zug“. Dazu kam eine Regelfrage zur 50-Züge-Regel. Beide Befunde sind behoben.
 
-| Schweregrad | Anzahl |
+| Schweregrad | Anzahl (davon behoben) |
 |---|---|
 | Blocker | 0 |
 | Hoch | 0 |
-| Mittel | 1 |
-| Niedrig | 1 |
+| Mittel | 1 (1) |
+| Niedrig | 1 (1) |
 | Kosmetisch | 0 |
 
-**Tests:** 46 insgesamt (33 Desktop, 13 Mobil) · 45 grün · 0 rot · 1 als bekannter Fehler markiert.
+**Tests:** 47 insgesamt (34 Desktop, 13 Mobil) · 47 grün · 0 rot · 0 als bekannter Fehler markiert.
 Stabil in fünf Wiederholungen je Test (`--repeat-each=5`).
 
 ---
 
 ## Befunde
 
-### F-01 · Eine Antwort ohne gültiges JSON friert das Brett ein · **Mittel**
+### F-01 · Eine Antwort ohne gültiges JSON friert das Brett ein · **Mittel** · behoben
 
 - **Kategorie:** Netzwerkfehler / Fehlerbehandlung
 - **Art:** Fehler in der App
@@ -40,21 +40,21 @@ Stabil in fünf Wiederholungen je Test (`--repeat-each=5`).
    (etwa die HTML-Seite eines Proxys oder eine abgeschnittene Antwort).
 3. Einen Stein setzen.
 
-Automatisiert in `e2e/tests/spiel.edge.spec.ts` → „eine unlesbare Antwort des Servers führt zu einer
-Fehlermeldung statt zu einem eingefrorenen Brett“ (mit `test.fail` markiert)
+Automatisiert in `e2e/tests/spiel.edge.spec.ts` → „eine Antwort ohne gültiges JSON führt zu einer Fehlermeldung,
+und das Brett bleibt bedienbar“, dazu derselbe Fall mit JSON, das kein Spiel ist
 
 **Erwartet:** Eine Fehlermeldung wie bei anderen Serverfehlern („Der Zug wurde nicht angenommen.“), das Brett
 bleibt beim alten Stand bedienbar oder die Seite bittet um Neuladen.
 **Tatsächlich:** Der Status zeigt weiter „Du bist am Zug. Setze einen Stein …“, kein Punkt reagiert mehr, in der
 Konsole steht ein unbehandelter `TypeError`. Nur Neuladen hilft.
 
-**Belege:** `test-results/…eingefrorenen-Brett-desktop/` (Screenshot, Video) bei einem Lauf ohne `test.fail`
-**Vermutete Ursache:** `frontend/js/api.js:16` macht aus unlesbarem JSON stillschweigend `{}`, bei Status 200
+**Ursache:** `frontend/js/api.js:16` macht aus unlesbarem JSON stillschweigend `{}`, bei Status 200
 wird das als Spiel übernommen (`app.js:49`). Danach wirft `isOngoing()` (`app.js:150`, `game?.result.status`)
 im `finally` von `run()` (`app.js:75–77`); `render()` bricht ab und jede weitere Eingabe wirft in `isHumanTurn()`.
 **Auswirkung:** Selten (braucht einen fehlerhaften Server oder Proxy), aber dann lügt die Oberfläche und ist tot.
-Vorschlag: `request()` wirft bei nicht lesbarer Antwort einen `ApiError`, und `game` wird erst nach einer gültigen
-Antwort ersetzt.
+**Behoben:** `request()` in `api.js` wirft einen `ApiError`, wenn die Antwort kein Spiel ist (kein JSON oder Felder
+fehlen). So bleibt `game` beim alten Stand, der Status zeigt „Der Zug wurde nicht angenommen.“, und das Brett bleibt
+bedienbar. Beide Tests waren vor der Änderung rot und sind danach grün, auch ohne Fehler in der Konsole.
 
 ---
 
@@ -111,5 +111,4 @@ Der erste Lauf hatte acht rote Tests; alle lagen am Test, nicht an der App:
 
 ## Empfohlene nächste Schritte
 
-1. F-01 beheben (`api.js` und `run()` in `app.js`) und `test.fail` aus dem Test entfernen.
-2. Firefox als weiteres Projekt aufnehmen, sobald die CI-Laufzeit es erlaubt.
+1. Firefox als weiteres Projekt aufnehmen, sobald die CI-Laufzeit es erlaubt.

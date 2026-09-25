@@ -60,7 +60,7 @@ Legende: ✅ abgedeckt · ➖ bewusst ausgelassen · ⏳ offen
 | Schlagen: alle Steine in Mühlen | ✅ | `spiel.spec.ts` › der Mensch gewinnt … |
 | Esc bricht Mühlenzug ab | ✅ | |
 | Eingabe während eigenem Request / Computerzug / nach Spielende | ✅ | Requests werden gezielt angehalten, kein Warten auf Zeit |
-| Server 500, Abbruch, 404, kaputtes JSON | ✅ | kaputtes JSON: F-01, als `test.fail` markiert |
+| Server 500, Abbruch, 404, kaputtes JSON, JSON ohne Spiel | ✅ | die beiden letzten waren F-01, behoben |
 | 409 durch veralteten zweiten Tab | ✅ | |
 | Neuladen: Spiel bleibt, offene Schlag-Auswahl verworfen | ✅ | |
 | Unbekannte gespeicherte ID, gesperrter `localStorage` | ✅ | |
