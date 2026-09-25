@@ -1,0 +1,541 @@
+/* Mühle: a hewn sandstone slab on moss, pebbles of marble and basalt, ochre for everything that asks for a move. */
+
+/* Served with the page (SIL Open Font License, see fonts/OFL-*.txt), so no request goes to a font service */
+@font-face {
+  font-family: 'Marcellus';
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/Marcellus-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/AlegreyaSans-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/AlegreyaSans-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/AlegreyaSans-700.woff2') format('woff2');
+}
+
+:root {
+  --moss: #3e4a38;
+  --moss-dark: #323c2d;
+  --lichen: #e4e6d8;
+  --lichen-dim: #b8bea9;
+  --sandstone: #c8ae84;
+  --sandstone-light: #e3d0a8;
+  --groove: #6e5a3f;
+  --marble: #f3efe6;
+  --basalt: #262522;
+  --ochre: #e0a93b;
+
+  --font-inscription: 'Marcellus', 'Trajan Pro', Georgia, serif;
+  --font-text: 'Alegreya Sans', 'Gill Sans', 'Segoe UI', sans-serif;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--moss);
+  color: var(--lichen);
+  font-family: var(--font-text);
+  font-size: 100%;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 35% 45%, #465340 0%, var(--moss) 55%, var(--moss-dark) 100%);
+}
+
+/* ------------------------------------------------------------ layout */
+
+.table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 23rem);
+  gap: clamp(1.5rem, 4vw, 4.5rem);
+  /* Anchored at the top, so the board stays put when the panel grows */
+  align-items: start;
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: clamp(1rem, 4vh, 3.5rem) clamp(1rem, 3vw, 3rem);
+}
+
+.slab-frame {
+  display: flex;
+  justify-content: center;
+}
+
+.slab {
+  display: block;
+  width: min(100%, calc(100vh - 4rem));
+  height: auto;
+  aspect-ratio: 1;
+  overflow: visible;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.panel {
+  max-width: 34rem;
+}
+
+@media (max-width: 56rem) {
+  .table {
+    grid-template-columns: 1fr;
+  }
+
+  .slab {
+    width: min(100%, 36rem);
+  }
+}
+
+/* ------------------------------------------------------------ type */
+
+.title {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-inscription);
+  font-weight: 400;
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--sandstone-light);
+}
+
+.turn {
+  min-height: 6.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.status {
+  margin: 0 0 0.5rem;
+  font-size: 1.3125rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.status.result {
+  font-family: var(--font-inscription);
+  font-weight: 400;
+  font-size: 2.25rem;
+  line-height: 1.15;
+  color: var(--ochre);
+}
+
+.detail {
+  margin: 0;
+  max-width: 34em;
+  color: var(--lichen-dim);
+}
+
+/* ------------------------------------------------------------ players */
+
+.players {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+}
+
+.player {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0 0.6rem 0.9rem;
+  border-left: 3px solid transparent;
+}
+
+.player.active {
+  border-left-color: var(--ochre);
+}
+
+.token {
+  grid-row: span 2;
+  width: 1.75rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  box-shadow: 1px 3px 4px rgb(20 26 18 / 0.5);
+}
+
+.token.white,
+.pebble.white {
+  background: radial-gradient(circle at 36% 30%, #fffdf8, #ece6da 55%, #bdb3a3);
+}
+
+.token.black,
+.pebble.black {
+  background: radial-gradient(circle at 36% 30%, #5a5752, #2d2b28 50%, #151412);
+}
+
+.player-text {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.6rem;
+  align-items: baseline;
+}
+
+.player-name {
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.player-note {
+  color: var(--lichen-dim);
+}
+
+.pebbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.hand,
+.captured {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.pebble {
+  width: 0.8rem;
+  height: 0.72rem;
+  border-radius: 50%;
+}
+
+.captured .pebble {
+  width: 0.6rem;
+  height: 0.54rem;
+  opacity: 0.8;
+}
+
+body.thinking .player.active .token {
+  animation: think 1.4s ease-in-out infinite;
+}
+
+@keyframes think {
+  50% {
+    box-shadow: 0 0 0 5px rgb(224 169 59 / 0.35);
+  }
+}
+
+/* ------------------------------------------------------------ moves */
+
+.log {
+  margin-bottom: 1.75rem;
+}
+
+.log-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-inscription);
+  font-weight: 400;
+  font-size: 1.3125rem;
+  color: var(--sandstone-light);
+}
+
+.moves {
+  max-height: 11.5rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 0 0 2.25rem;
+  font-variant-numeric: tabular-nums;
+  scrollbar-color: var(--groove) transparent;
+}
+
+/* Earlier moves fade out at the top when the list scrolls */
+.moves.overflowing {
+  mask-image: linear-gradient(to bottom, transparent, #000 2rem);
+}
+
+.moves li {
+  padding: 0.05rem 0;
+}
+
+.moves li::marker {
+  color: var(--lichen-dim);
+}
+
+.move {
+  display: inline-block;
+  min-width: 7.5rem;
+}
+
+.move.latest {
+  color: var(--ochre);
+}
+
+.log-empty {
+  margin: 0;
+  color: var(--lichen-dim);
+}
+
+/* ------------------------------------------------------------ new game */
+
+.new-game summary {
+  cursor: pointer;
+  width: fit-content;
+  font-family: var(--font-inscription);
+  font-size: 1.3125rem;
+  color: var(--sandstone-light);
+}
+
+.new-game form {
+  padding-top: 0.75rem;
+}
+
+.new-game fieldset {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.new-game legend {
+  margin-bottom: 0.35rem;
+  color: var(--lichen-dim);
+}
+
+.new-game label {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.15rem 0;
+  cursor: pointer;
+}
+
+.new-game input {
+  accent-color: var(--ochre);
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+}
+
+.new-game button {
+  margin-top: 0.25rem;
+  padding: 0.7rem 1.4rem;
+  border: 0;
+  border-radius: 0.35rem 0.6rem 0.45rem 0.55rem;
+  background: var(--sandstone);
+  color: #2b2418;
+  font: 700 1.0625rem/1 var(--font-text);
+  box-shadow: 0 3px 0 var(--groove);
+  cursor: pointer;
+}
+
+.new-game button:hover {
+  background: var(--sandstone-light);
+}
+
+.new-game button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--groove);
+}
+
+:focus-visible {
+  outline: 3px solid var(--ochre);
+  outline-offset: 3px;
+}
+
+.noscript {
+  padding: 2rem;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------ the slab */
+
+.slab-body {
+  fill: var(--sandstone);
+}
+
+.slab-grain {
+  fill: var(--sandstone);
+}
+
+.slab-edge {
+  fill: none;
+  stroke: #a88f66;
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
+.groove,
+.groove-light {
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.groove {
+  stroke: var(--groove);
+}
+
+.groove-light {
+  stroke: #f0e2c2;
+  opacity: 0.85;
+}
+
+.mule-line {
+  fill: none;
+  stroke: var(--ochre);
+  stroke-width: 7;
+  stroke-linecap: round;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coordinates text {
+  fill: var(--groove);
+  opacity: 0.75;
+  font-family: var(--font-inscription);
+  font-size: 22px;
+  text-anchor: middle;
+}
+
+.hole {
+  fill: url(#drill);
+  stroke: var(--sandstone-light);
+  stroke-width: 1.5;
+}
+
+.stones {
+  pointer-events: none;
+}
+
+.stone-body {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.stone-shadow {
+  fill: #1f170d;
+  opacity: 0.45;
+}
+
+.stone.white .stone-face {
+  stroke: #a99f8e;
+  stroke-width: 1;
+}
+
+.stone.black .stone-face {
+  stroke: #0e0d0c;
+  stroke-width: 1;
+}
+
+.stone-gloss {
+  fill: #fff;
+  opacity: 0.45;
+}
+
+.stone.black .stone-gloss {
+  opacity: 0.16;
+}
+
+/* Points on the slab: rings and dots in ochre ask for a decision */
+
+.spot {
+  outline: none;
+}
+
+.spot[aria-disabled='false'] {
+  cursor: pointer;
+}
+
+.spot-area {
+  fill: transparent;
+}
+
+.spot-ring,
+.spot-dot {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.spot-ring {
+  fill: none;
+  stroke: var(--ochre);
+  stroke-width: 4;
+}
+
+.spot-dot {
+  fill: var(--ochre);
+}
+
+.spot.movable .spot-ring {
+  opacity: 0.55;
+  stroke-width: 2.5;
+}
+
+.spot.selected .spot-ring {
+  opacity: 1;
+  stroke-width: 5;
+}
+
+.spot.target .spot-dot {
+  opacity: 0.9;
+}
+
+.spot.capturable .spot-ring {
+  opacity: 1;
+  stroke-dasharray: 10 7;
+  animation: turn 6s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.spot.last-from .spot-dot {
+  opacity: 0.4;
+  fill: var(--groove);
+}
+
+.spot.last-to .spot-ring {
+  opacity: 0.45;
+  stroke: var(--lichen);
+  stroke-width: 2;
+}
+
+.spot[aria-disabled='false']:hover .spot-ring {
+  opacity: 0.8;
+}
+
+.spot:focus-visible .spot-ring {
+  opacity: 1;
+  stroke: var(--lichen);
+  stroke-width: 4;
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+body.thinking .slab {
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

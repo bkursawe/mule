@@ -1,24 +1,29 @@
 # CLAUDE.md
 
-Mühle-Spiel (Nine Men's Morris) mit Computergegner in Kotlin. „Mule“ = Mühle (engl. *mill*).
+Mühle-Spiel (Nine Men's Morris) gegen einen Computergegner, im Browser spielbar. „Mule“ = Mühle (engl. *mill*).
 
 ## Build & Test
 
-- Kotlin 2.4.20 (JVM), JDK-Toolchain 21, Gradle-Wrapper 9.8.0
-- Tests: JUnit 6, AssertJ; Lint: ktlint (Regeln in `.editorconfig`)
+- Kotlin 2.4.20 (JVM), JDK-Toolchain 21, Gradle-Wrapper 9.8.0, Ktor 3 (Version in `gradle.properties`)
+- Tests: JUnit 6, AssertJ, Ktor-Testhost; Lint: ktlint (Regeln in `.editorconfig`)
 - CI: `.github/workflows/build.yml` führt `./gradlew build` aus
 
 ```sh
-./gradlew build                                      # kompilieren, ktlint, testen
-./gradlew test --tests "de.praxisit.mule.BoardTest"  # einzelne Testklasse
-./gradlew ktlintFormat                               # Formatierung korrigieren
-./gradlew run                                        # Computer gegen Computer
-./gradlew run --args=--human                         # Mensch gegen Computer
+./gradlew build                                             # kompilieren, ktlint, testen (alle Module)
+./gradlew :engine:test --tests "de.praxisit.mule.BoardTest" # einzelne Testklasse
+./gradlew ktlintFormat                                      # Formatierung korrigieren
+./gradlew :backend:run                                      # Webserver, http://localhost:8080 (PORT setzbar)
+./gradlew :backend:runConsole                               # Konsole: Computer gegen Computer
+./gradlew :backend:runConsole --args=--human                # Konsole: Mensch gegen Computer
 ```
 
 ## Struktur
 
-- Paket `de.praxisit.mule` in `src/main/kotlin/…` und `src/test/kotlin/…`
+- `engine/`: Spielregeln und Computergegner, Paket `de.praxisit.mule`, ohne Abhängigkeiten außer Kotlin
+- `backend/`: Ktor-Server (`de.praxisit.mule.server`) und Konsolenspiel (`de.praxisit.mule.console`), nutzt `engine`
+- `frontend/`: statisches HTML/CSS/JS ohne Build-Schritt; `processResources` kopiert es nach `static/`,
+  der Server liefert es unter `/` aus. Schriften (Marcellus, Alegreya Sans) liegen selbst gehostet in
+  `frontend/fonts/` mit ihren OFL-Lizenzen, damit keine Anfrage an einen Schriftdienst geht.
 
 ## Domäne
 
@@ -34,11 +39,18 @@ Brettfelder sind mit 0–23 nummeriert:
 21-------22-------23
 ```
 
+Die Oberfläche zeigt die Felder in der üblichen Notation auf einem 7×7-Raster: 0 = a7, 2 = g7, 21 = a1, 23 = g1.
+
 ## Architektur
 
-Vier Schichten, Abhängigkeiten nur von oben nach unten:
+Abhängigkeiten nur von oben nach unten:
 
-1. **Oberfläche**: `Game` (Spielschleife, `main()`), `ConsoleUi` (Ausgabe, `ConsolePlayer` für menschliche Züge).
+1. **Oberfläche**
+   - Web: `frontend/js/app.js` (Spielablauf, Texte), `board.js` (SVG-Steinplatte, Animationen), `api.js`.
+   - Server: `Server.kt` (Routen, Fehler → 400/404/409), `GameService` (Spiele im Speicher, je Spiel ein Mutex,
+     inaktive Spiele fliegen nach 6 h raus), `Dtos.kt` (JSON-Format). API: `POST /api/games`,
+     `GET /api/games/{id}`, `POST /api/games/{id}/moves`, `POST /api/games/{id}/computer-move`.
+   - Konsole: `Game` (Spielschleife), `ConsoleUi` (Ausgabe, `ConsolePlayer`).
 2. **KI**: `EvaluationStrategy` bewertet eine `Position` (positiv = Vorteil Weiß). Standard ist `ExtendedEvaluationStrategy`: Steine inkl. Hand, Mühlen, im nächsten Zug schließbare Mühlen, Beweglichkeit und Feldgewichte. `SimpleEvaluationStrategy` bleibt als Vergleich. Gewichte nur nach Testpartien gegen die bisherige Bewertung ändern. `ChoosingStrategy` wählt einen Zug: `SimpleChoosingStrategy` oder `AlphaBetaStrategy(depth, evaluation, timeLimit)`. Letztere ist Negamax mit iterativer Vertiefung, `TranspositionTable` und Zugsortierung (Tabellenzug, Schlagzüge, Killerzüge). Ein Sieg zählt `WIN` minus Halbzüge bis dahin. Jede Strategie bekommt ihre Bewertung im Konstruktor.
 3. **Regeln**: `Rules` erzeugt die legalen Züge und wendet sie an. `GameState` = `Position` + Historie: `play(move)` prüft die Legalität und wechselt den Spieler, `result` liefert `GameResult` (`Ongoing`, `Remis`, `Win`). Remis bei dreifacher Wiederholung oder nach 50 Zügen ohne Schlagen (jeder Spielerzug zählt einzeln).
 4. **Modell** (unveränderlich):
@@ -49,7 +61,10 @@ Vier Schichten, Abhängigkeiten nur von oben nach unten:
 
 ## Konventionen
 
-- Kotlin-Style `official`. Code und Bezeichner auf Englisch.
+- Kotlin-Style `official`. Code und Bezeichner auf Englisch, Texte der Oberfläche auf Deutsch (Du-Form).
 - Immutabilität bevorzugen: `copy(...)` statt Mutation, abgeleitete Werte als `by lazy`.
 - Tests: Namen in Backticks, `assertThat`/`assertThatThrownBy` von AssertJ, `@ParameterizedTest` mit `@CsvSource`, `@Nested`. Testzustände mit `createState(...)` aus `TestStates.kt` bauen, damit sie regelkonform sind.
 - `PerftTest` sichert die Zuggenerierung ab: Ändern sich die Zahlen, ist die Zuggenerierung falsch, nicht der Test.
+- Frontend-Design: Sandsteinplatte auf Moos, Kiesel aus Marmor und Basalt, Ocker nur für das, was eine
+  Entscheidung verlangt (Ziele, Auswahl, Mühle). Farben als CSS-Variablen in `styles.css`. Bewegung nur als
+  Antwort auf Züge; `prefers-reduced-motion` wird respektiert.

@@ -1,5 +1,6 @@
-package de.praxisit.mule
+package de.praxisit.mule.console
 
+import de.praxisit.mule.*
 import de.praxisit.mule.GameResult.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -39,9 +40,9 @@ class ConsoleUiTest {
         @Test
         fun `draw board with some stones`() {
             val board = Board()
-                .setStone(White, 3)
-                .setStone(White, 4)
-                .setStone(Black, 5)
+                .setStone(White, FieldIndex(3))
+                .setStone(White, FieldIndex(4))
+                .setStone(Black, FieldIndex(5))
             val output = ConsoleUi.format(GameState(Position(board)), 4.0)
             val expected = """
                 O--------O--------O

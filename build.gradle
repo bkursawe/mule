@@ -1,40 +1,36 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '2.4.20'
-    id 'application'
-    id 'org.jlleitschuh.gradle.ktlint' version '14.2.0'
+    id 'org.jetbrains.kotlin.jvm' version '2.4.20' apply false
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.4.20' apply false
+    id 'org.jlleitschuh.gradle.ktlint' version '14.2.0' apply false
 }
 
-group = 'de.praxisit.mule'
-version = '1.0-SNAPSHOT'
+subprojects {
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+    apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
-repositories {
-    mavenCentral()
-}
+    group = 'de.praxisit.mule'
+    version = '1.0-SNAPSHOT'
 
-dependencies {
-    testImplementation platform('org.junit:junit-bom:6.1.3')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.27.7'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
+    repositories {
+        mavenCentral()
+    }
 
-kotlin {
-    jvmToolchain(21)
-}
+    dependencies {
+        testImplementation platform('org.junit:junit-bom:6.1.3')
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation 'org.assertj:assertj-core:3.27.7'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
 
-ktlint {
-    version = '1.8.0'
-}
+    kotlin {
+        jvmToolchain(21)
+    }
 
-application {
-    mainClass = 'de.praxisit.mule.GameKt'
-}
+    ktlint {
+        version = '1.8.0'
+    }
 
-tasks.named('run') {
-    // Human players type their moves on the console
-    standardInput = System.in
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
 }

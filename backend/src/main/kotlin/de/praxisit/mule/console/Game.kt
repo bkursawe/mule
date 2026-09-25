@@ -1,5 +1,6 @@
-package de.praxisit.mule
+package de.praxisit.mule.console
 
+import de.praxisit.mule.*
 import de.praxisit.mule.GameResult.Ongoing
 import kotlin.time.Duration.Companion.seconds
 
