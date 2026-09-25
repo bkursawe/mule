@@ -46,3 +46,6 @@ fun GameState.playBackAndForth() = listOf(
 
 /** The position of [createBackAndForthState] for the third time. */
 fun createRepeatedState() = createBackAndForthState().playBackAndForth().playBackAndForth()
+
+/** Parses space separated field numbers, an empty string gives no fields. */
+fun String.toFields() = if (isBlank()) emptyList() else split(" ").map { it.toInt() }

@@ -65,8 +65,6 @@ class AlphaBetaStrategyTest {
         assertThat(move).isEqualTo(SetMove(White, 10.asFieldIndex))
     }
 
-    private fun String.toFields() = split(" ").map { it.toInt() }
-
     // Plain minimax from White's point of view as a reference for the search
     private fun minimax(state: GameState, depth: Int): Double = when {
         state.activePlayer.phase == Phase.LOOSE -> if (state.activeColor == White) NEGATIVE_INFINITY else POSITIVE_INFINITY
