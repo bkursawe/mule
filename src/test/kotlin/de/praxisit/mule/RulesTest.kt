@@ -14,7 +14,7 @@ class RulesTest {
 
             assertThat(moves).hasSize(24)
                 .hasOnlyElementsOfType(SetMove::class.java)
-                .extracting(Move::color).containsOnly(White)
+                .allMatch { it.color == White }
         }
 
         @Test
@@ -25,7 +25,7 @@ class RulesTest {
 
             assertThat(moves).hasSize(21)
                 .hasOnlyElementsOfType(SetMove::class.java)
-                .extracting(Move::color).containsOnly(Black)
+                .allMatch { it.color == Black }
         }
 
         @Test
@@ -36,7 +36,7 @@ class RulesTest {
 
             assertThat(moves).hasSize(21)
                 .hasOnlyElementsOfType(SetMove::class.java)
-                .extracting(Move::color).containsOnly(Black)
+                .allMatch { it.color == Black }
         }
     }
 
@@ -49,8 +49,7 @@ class RulesTest {
         assertThat(moves)
             .hasSize(8)
             .hasOnlyElementsOfType(PushMove::class.java)
-            .extracting(Move::color)
-            .containsOnly(White)
+            .allMatch { it.color == White }
     }
 
     @Nested
@@ -64,8 +63,7 @@ class RulesTest {
             assertThat(moves)
                 .hasSize(63)
                 .hasOnlyElementsOfType(JumpMove::class.java)
-                .extracting(Move::color)
-                .containsOnly(White)
+                .allMatch { it.color == White }
         }
 
         @Test
@@ -77,8 +75,7 @@ class RulesTest {
             assertThat(moves)
                 .hasSize(54)
                 .hasOnlyElementsOfType(JumpMove::class.java)
-                .extracting(Move::color)
-                .containsOnly(White)
+                .allMatch { it.color == White }
         }
     }
 

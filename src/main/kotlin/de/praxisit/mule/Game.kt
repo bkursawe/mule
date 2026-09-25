@@ -3,8 +3,14 @@ package de.praxisit.mule
 import de.praxisit.mule.GameResult.Ongoing
 import kotlin.time.Duration.Companion.seconds
 
-fun main() {
-    Game(white = Game.computerPlayer(), black = Game.computerPlayer()).play()
+/** Plays computer against computer, or with `--human` a human against the computer. */
+fun main(args: Array<String>) {
+    val game = if ("--human" in args) {
+        Game.humanAgainstComputer()
+    } else {
+        Game(white = Game.computerPlayer(), black = Game.computerPlayer())
+    }
+    game.play()
 }
 
 /**
