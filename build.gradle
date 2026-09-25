@@ -33,4 +33,16 @@ subprojects {
     tasks.named('test') {
         useJUnitPlatform()
     }
+
+    // The Dockerfile caches these in a layer of its own. Unlike the dependencies report it fails when a download fails.
+    tasks.register('downloadDependencies') {
+        group = 'build setup'
+        description = 'Downloads what compiling and packaging the main code needs.'
+        def needed = ['compileClasspath', 'runtimeClasspath', 'kotlinCompilerClasspath',
+                      'kotlinCompilerPluginClasspathMain', 'kotlinBuildToolsApiClasspath']
+        def classpaths = configurations.matching { it.name in needed }
+        doLast {
+            classpaths.each { it.files }
+        }
+    }
 }

@@ -14,6 +14,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingCall
 import io.ktor.server.routing.get
@@ -49,6 +50,8 @@ fun Application.module(
     }
     if (testApi) log.warn("The test API is enabled: POST /api/test/games starts games from any position")
     routing {
+        // For health checks of the container or a load balancer
+        get("/health") { call.respondText("OK") }
         gameRoutes(games)
         if (testApi) testRoutes(games)
         staticResources("/", "static")

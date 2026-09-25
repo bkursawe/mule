@@ -1,0 +1,13 @@
+# Only what the Dockerfile copies goes into the build context; everything else stays out
+# (build output, .git, e2e/node_modules). A new module or source folder has to be listed here too.
+*
+!gradlew
+!gradle/
+!settings.gradle
+!build.gradle
+!gradle.properties
+!engine/build.gradle
+!engine/src/main/
+!backend/build.gradle
+!backend/src/main/
+!frontend/

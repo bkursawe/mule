@@ -1,8 +1,9 @@
 # Testdaten
 
-**Instanz.** Playwright startet das Backend selbst aus `backend/build/install/backend` auf Port 8089, mit
-`MULE_TEST_API=true`. Spiele liegen nur im Speicher; beim Beenden ist alles weg. Es gibt keine Ankerdaten
-und nichts aufzuräumen.
+**Instanz.** Lokal startet Playwright das Backend selbst aus `backend/build/install/backend` auf Port 8089, mit
+`MULE_TEST_API=true`. In der CI laufen die Tests gegen das Docker-Image, gestartet mit `MULE_TEST_API=true`; `BASE_URL`
+zeigt dorthin, und Playwright startet keinen eigenen Server. Spiele liegen nur im Speicher; beim Beenden ist alles weg.
+Es gibt keine Ankerdaten und nichts aufzuräumen.
 
 **Isolation.** Jeder Test hat einen eigenen Browser-Kontext (eigener `localStorage`) und ein eigenes Spiel.
 Kein Test liest das Spiel eines anderen, darum laufen alle parallel und einzeln.

@@ -116,6 +116,14 @@ class GameApiTest {
         assertThat(response.bodyAsText()).contains("<title>Mühle</title>")
     }
 
+    @Test
+    fun `the health check answers`() = apiTest { client ->
+        val response = client.get("/health")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(response.bodyAsText()).isEqualTo("OK")
+    }
+
     private fun apiTest(block: suspend ApplicationTestBuilder.(HttpClient) -> Unit) = testApplication {
         application { module(GameService()) }
         val client = createClient { install(ContentNegotiation) { json() } }

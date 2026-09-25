@@ -7,7 +7,9 @@ Mühle-Spiel (Nine Men's Morris) gegen einen Computergegner, im Browser spielbar
 - Kotlin 2.4.20 (JVM), JDK-Toolchain 21, Gradle-Wrapper 9.8.0, Ktor 3 (Version in `gradle.properties`)
 - Tests: JUnit 6, AssertJ, Ktor-Testhost; Lint: ktlint (Regeln in `.editorconfig`)
 - E2E: Playwright (Node 22, Chromium) in `e2e/`, startet den Server aus `installDist` selbst
-- CI: `.github/workflows/build.yml` führt `./gradlew build` und in einem zweiten Job die E2E-Tests aus
+- Docker: `Dockerfile` (mehrstufig, Laufzeit auf `eclipse-temurin:21-jre`), `.dockerignore` als Positivliste
+- CI: `.github/workflows/build.yml`, Job `build` führt `./gradlew build` aus; Job `e2e` prüft das Dockerfile mit
+  hadolint, baut das Image (Layer-Cache in GitHub Actions) und lässt die E2E-Tests gegen den Container laufen
 
 ```sh
 ./gradlew build                                             # kompilieren, ktlint, testen (alle Module)
@@ -22,6 +24,22 @@ npx playwright test                                          # E2E, Port 8089; B
 ```
 
 Ohne Download des Playwright-Browsers: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium` setzen.
+
+```sh
+docker build -t mule .                                       # Image bauen (Gradle läuft im Container)
+docker run --rm -p 8080:8080 mule                            # http://localhost:8080, Healthcheck unter /health
+docker run -d -p 8089:8080 -e MULE_TEST_API=true mule        # für E2E: BASE_URL=http://localhost:8089 npx playwright test
+```
+
+Aufbau des Images:
+- Die Build-Stufe kopiert zuerst nur Wrapper und Build-Skripte und lädt mit `./gradlew downloadDependencies` alles für
+  Kompilieren und Packen. Diese Schicht wird nur neu gebaut, wenn sich ein Build-Skript ändert.
+- Danach wird `offline` kompiliert: Fehlt eine Abhängigkeit in der Schicht, bricht der Build ab. Braucht der Build
+  eine neue Konfiguration, gehört sie in die Liste von `downloadDependencies` in `build.gradle`.
+- Eigene Jars und Bibliotheken liegen in getrennten Schichten.
+- Die Laufzeit hat nur eine JRE: Benutzer 10001, `java` als Prozess 1, Heap 75 % des Container-Speichers.
+- `JAVA_VERSION` im Dockerfile muss zu `jvmToolchain` passen. Ein neues Modul oder ein neuer Quellordner muss in das
+  Dockerfile und in die `.dockerignore`.
 
 ## Struktur
 
@@ -61,6 +79,7 @@ Abhängigkeiten nur von oben nach unten:
      `GET /api/games/{id}`, `POST /api/games/{id}/moves`, `POST /api/games/{id}/computer-move`.
      `TestApi.kt`: `POST /api/test/games` legt ein Spiel in beliebiger Stellung an, nur mit `MULE_TEST_API=true`.
      Sie ist für die E2E-Tests gedacht und darf auf keinem Server für echte Spieler aktiv sein.
+     `GET /health` antwortet mit `OK`, für den Healthcheck des Containers. Logs gehen per `logback.xml` auf INFO nach stdout.
    - Konsole: `Game` (Spielschleife), `ConsoleUi` (Ausgabe, `ConsolePlayer`).
 2. **KI**: `EvaluationStrategy` bewertet eine `Position` (positiv = Vorteil Weiß). Standard ist `ExtendedEvaluationStrategy`: Steine inkl. Hand, Mühlen, im nächsten Zug schließbare Mühlen, Beweglichkeit und Feldgewichte. `SimpleEvaluationStrategy` bleibt als Vergleich. Gewichte nur nach Testpartien gegen die bisherige Bewertung ändern. `ChoosingStrategy` wählt einen Zug: `SimpleChoosingStrategy` oder `AlphaBetaStrategy(depth, evaluation, timeLimit)`. Letztere ist Negamax mit iterativer Vertiefung, `TranspositionTable` und Zugsortierung (Tabellenzug, Schlagzüge, Killerzüge). Ein Sieg zählt `WIN` minus Halbzüge bis dahin. Jede Strategie bekommt ihre Bewertung im Konstruktor.
 3. **Regeln**: `Rules` erzeugt die legalen Züge und wendet sie an. `GameState` = `Position` + Historie: `play(move)` prüft die Legalität und wechselt den Spieler, `result` liefert `GameResult` (`Ongoing`, `Remis`, `Win`). Remis bei dreifacher Wiederholung oder nach 20 Zügen je Spieler (40 Halbzügen) ohne Mühle wie in der Turnierregel; gezählt wird erst ab der Zugphase, jeder Setzzug und jedes Schlagen setzt den Zähler zurück.
