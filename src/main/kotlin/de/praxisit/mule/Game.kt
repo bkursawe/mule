@@ -1,9 +1,10 @@
 package de.praxisit.mule
 
 import de.praxisit.mule.GameResult.Ongoing
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
-    Game(white = AlphaBetaStrategy(), black = AlphaBetaStrategy()).play()
+    Game(white = Game.computerPlayer(), black = Game.computerPlayer()).play()
 }
 
 /**
@@ -33,10 +34,13 @@ class Game(
     private fun printState(state: GameState) = println(ConsoleUi.format(state, evaluation.evaluate(state.position)))
 
     companion object {
+        /** A computer player that thinks one second per move. */
+        fun computerPlayer() = AlphaBetaStrategy(depth = 20, timeLimit = 1.seconds)
+
         fun humanAgainstComputer(): Game = if (ConsoleUi.askColor() == White) {
-            Game(white = ConsolePlayer(), black = AlphaBetaStrategy())
+            Game(white = ConsolePlayer(), black = computerPlayer())
         } else {
-            Game(white = AlphaBetaStrategy(), black = ConsolePlayer())
+            Game(white = computerPlayer(), black = ConsolePlayer())
         }
     }
 }
