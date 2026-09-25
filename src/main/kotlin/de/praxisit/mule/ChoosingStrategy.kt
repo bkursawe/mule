@@ -17,7 +17,7 @@ fun interface ChoosingStrategy {
  * Chooses the move with the best evaluation after one move.
  */
 class SimpleChoosingStrategy(
-    private val evaluation: EvaluationStrategy = SimpleEvaluationStrategy()
+    private val evaluation: EvaluationStrategy = ExtendedEvaluationStrategy()
 ) : ChoosingStrategy {
     override fun chooseMove(state: GameState): Move {
         val score = { move: Move -> evaluation.evaluate(state.play(move).position) }
@@ -37,7 +37,7 @@ class SimpleChoosingStrategy(
  */
 class AlphaBetaStrategy(
     private val depth: Int = 5,
-    private val evaluation: EvaluationStrategy = SimpleEvaluationStrategy(),
+    private val evaluation: EvaluationStrategy = ExtendedEvaluationStrategy(),
     private val timeLimit: Duration? = null
 ) : ChoosingStrategy {
     // Kept between moves: positions of the last search often come up again

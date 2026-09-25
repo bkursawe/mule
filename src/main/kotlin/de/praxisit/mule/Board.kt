@@ -83,14 +83,17 @@ class Board private constructor(private val whiteStones: Int, private val blackS
         stones and otherFields == otherFields
     }
 
-    fun imcompleteMillCount(color: Color): Int {
+    fun imcompleteMillCount(color: Color) = Integer.bitCount(closingFields(color))
+
+    /** The empty fields on which a stone of [color] would close a mule, as a bit mask. */
+    fun closingFields(color: Color): Int {
         val stones = stones(color)
         val emptyFields = emptyFields
         var closingFields = 0
         for (mule in MULE_MASKS) {
             if (Integer.bitCount(stones and mule) == 2) closingFields = closingFields or (mule and emptyFields)
         }
-        return Integer.bitCount(closingFields)
+        return closingFields
     }
 
     fun muleCount(color: Color): Int {

@@ -13,7 +13,7 @@ fun main() {
 class Game(
     private val white: ChoosingStrategy,
     private val black: ChoosingStrategy,
-    private val evaluation: EvaluationStrategy = SimpleEvaluationStrategy()
+    private val evaluation: EvaluationStrategy = ExtendedEvaluationStrategy()
 ) {
     fun play(): GameResult {
         var state = GameState()

@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.measureTimedValue
 
 class AlphaBetaStrategyTest {
-    private val evaluation = SimpleEvaluationStrategy()
+    private val evaluation = ExtendedEvaluationStrategy()
 
     @Test
     fun `get move for Black`() {
@@ -44,7 +44,7 @@ class AlphaBetaStrategyTest {
         val color = if (colorName == "White") White else Black
         val state = createState(whiteStones.toFields(), whiteStonesToSet, blackStones.toFields(), blackStonesToSet, color)
 
-        val move = AlphaBetaStrategy(DEPTH).chooseMove(state)
+        val move = AlphaBetaStrategy(DEPTH, evaluation).chooseMove(state)
 
         assertThat(minimax(state.play(move), DEPTH - 1, 1)).isEqualTo(minimax(state, DEPTH, 0))
     }
