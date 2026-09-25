@@ -1,0 +1,13 @@
+{
+  "name": "mule-e2e",
+  "private": true,
+  "description": "End-to-end tests of the Mühle web frontend with Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0"
+  }
+}

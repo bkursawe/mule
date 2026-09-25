@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mühle</title>
+  <meta name="description" content="Mühle gegen den Computer spielen">
+  <meta name="theme-color" content="#3e4a38">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/Marcellus-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/AlegreyaSans-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+<main class="table">
+  <div class="slab-frame">
+    <svg id="board" class="slab" viewBox="0 0 800 800" role="group" aria-label="Spielbrett"></svg>
+  </div>
+
+  <aside class="panel">
+    <h1 class="title">Mühle</h1>
+
+    <div class="turn" role="status">
+      <p id="status" class="status">Das Spiel wird geladen.</p>
+      <p id="detail" class="detail"></p>
+    </div>
+
+    <ul class="players" aria-label="Steine der Spieler">
+      <li class="player" id="player-human"></li>
+      <li class="player" id="player-computer"></li>
+    </ul>
+
+    <section class="log" aria-labelledby="log-title">
+      <h2 id="log-title" class="log-title">Züge</h2>
+      <ol id="moves" class="moves"></ol>
+      <p id="no-moves" class="log-empty">Noch kein Zug gespielt.</p>
+    </section>
+
+    <details id="new-game" class="new-game">
+      <summary>Neues Spiel</summary>
+      <form id="new-game-form">
+        <fieldset>
+          <legend>Du spielst</legend>
+          <label><input type="radio" name="humanColor" value="WHITE" checked> Weiß, du beginnst</label>
+          <label><input type="radio" name="humanColor" value="BLACK"> Schwarz</label>
+        </fieldset>
+        <fieldset>
+          <legend>Der Computer spielt</legend>
+          <label><input type="radio" name="strength" value="EASY"> locker</label>
+          <label><input type="radio" name="strength" value="MEDIUM" checked> gut, denkt 1 Sekunde</label>
+          <label><input type="radio" name="strength" value="HARD"> stark, denkt 3 Sekunden</label>
+        </fieldset>
+        <button type="submit">Neues Spiel beginnen</button>
+      </form>
+    </details>
+  </aside>
+</main>
+<noscript><p class="noscript">Zum Spielen braucht diese Seite JavaScript.</p></noscript>
+</body>
+</html>

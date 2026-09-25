@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_size = 4
+max_line_length = 120
+ktlint_code_style = intellij_idea
+# The arrows of when branches are aligned in columns
+ktlint_standard_no-multi-spaces = disabled
+# Enum entries and sealed subclasses are imported with *
+ktlint_standard_no-wildcard-imports = disabled
+# No trailing commas and no blank lines between when branches, like the rest of the code
+ij_kotlin_allow_trailing_comma = false
+ij_kotlin_allow_trailing_comma_on_call_site = false
+ktlint_standard_blank-line-between-when-conditions = disabled
+# Class headers may put the parameters on separate lines even when they would fit on one
+ktlint_standard_class-signature = disabled
