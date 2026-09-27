@@ -88,6 +88,104 @@ test.describe('Eingaben zur falschen Zeit', () => {
   });
 });
 
+test.describe('Dialog für ein neues Spiel', () => {
+  test('Esc schließt den Dialog und lässt eine offene Auswahl auf dem Brett stehen', async ({ mule }) => {
+    await mule.openPosition({ white: [...MULE_READY.white], black: [...MULE_READY.black] });
+    await mule.field('f2').click();
+    await expect(mule.status).toContainText('Wohin soll der Stein?');
+
+    await mule.openNewGameDialog();
+    await mule.page.keyboard.press('Escape');
+
+    await expect(mule.newGameDialog).toBeHidden();
+    await expect(mule.status).toContainText('Wohin soll der Stein?');
+  });
+
+  test('ein Klick neben den Dialog schließt ihn', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.openNewGameDialog();
+
+    await mule.page.mouse.click(5, 5);
+
+    await expect(mule.newGameDialog).toBeHidden();
+  });
+
+  test('der Schieberegler lässt sich mit den Pfeiltasten stellen', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.openNewGameDialog();
+    await mule.levelSlider.focus();
+
+    await mule.page.keyboard.press('ArrowRight');
+
+    await expect(mule.levelSlider).toHaveValue('4');
+    await expect(mule.levelSlider).toHaveAttribute('aria-valuetext', 'Stark');
+  });
+
+  test('eine gespeicherte Stärke einer älteren Version startet trotzdem ein Spiel', async ({ mule }) => {
+    await mule.page.addInitScript(() => {
+      localStorage.setItem('mule.settings', JSON.stringify({ humanColor: 'LILA', strength: 'LOCKER' }));
+    });
+
+    await mule.page.goto('/');
+
+    await mule.expectHumanTurn();
+    await expect(mule.player('Computer')).toHaveAccessibleName(/^Computer \(Leicht\), Schwarz/);
+  });
+});
+
+test.describe('Bewertung der Züge', () => {
+  test('ist die Bewertung eingeschaltet, bleibt sie es nach dem Neuladen', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.ratingSwitch.check();
+    await expect(mule.field('d6')).toHaveClass(/rated-/);
+
+    await mule.page.reload();
+
+    await expect(mule.ratingSwitch).toBeChecked();
+    await expect(mule.page.getByRole('list', { name: 'Farben der Bewertung' })).toBeVisible();
+  });
+
+  test('während die Bewertung lädt, lässt sich schon ziehen', async ({ mule }) => {
+    await mule.openNewGame();
+    const ratings = await mule.holdRequests('**/ratings');
+    const moves = mule.countMoveRequests();
+
+    await mule.ratingSwitch.check();
+    await ratings.arrived;
+    await expect(mule.page.getByText('Deine Züge werden bewertet …')).toBeVisible();
+    await mule.field('d6').click();
+
+    await mule.expectStone('d6', 'weißer Stein');
+    expect(moves.count).toBe(1);
+    ratings.release();
+    await mule.expectHumanTurn();
+  });
+
+  test('fällt die Bewertung aus, geht das Spiel ohne sie weiter', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.page.route('**/ratings', (route) => route.fulfill({ status: 500, json: { message: 'boom' } }));
+
+    await mule.ratingSwitch.check();
+
+    await expect(mule.page.getByText('Die Bewertung ist gerade nicht verfügbar.')).toBeVisible();
+    await expect(mule.status).toContainText('Du bist am Zug.');
+    await mule.field('d6').click();
+    await mule.expectStone('d6', 'weißer Stein');
+  });
+
+  test('beim Schlagen zeigt die Bewertung, welcher Stein sich lohnt', async ({ mule }) => {
+    // White closes a7-d7-g7 with g4 to g7. Black threatens c3 to c4, closing a4-b4-c4: taking g1 lets it happen.
+    await mule.openPosition({ white: ['a7', 'd7', 'g4', 'f2'], black: ['a4', 'b4', 'c3', 'e5', 'g1'] });
+    await mule.ratingSwitch.check();
+    await expect(mule.field('g4')).toHaveAccessibleName('g4, weißer Stein, sehr gut');
+    await mule.field('g4').click();
+    await mule.field('g7').click();
+
+    await expect(mule.field('g1')).toHaveAccessibleName('g1, schwarzer Stein, schlecht');
+    await expect(mule.page.getByRole('button', { name: /^(a4|b4|c3), schwarzer Stein, sehr gut$/ }).first()).toBeVisible();
+  });
+});
+
 test.describe('Server- und Netzwerkfehler', () => {
   test('ein Serverfehler beim Zug lässt das Brett unverändert und der Zug gelingt beim zweiten Versuch', async ({ mule }) => {
     await mule.openNewGame();
@@ -121,6 +219,7 @@ test.describe('Server- und Netzwerkfehler', () => {
     await mule.field('d6').click();
 
     await expect(mule.status).toContainText('Dieses Spiel gibt es nicht mehr.');
+    await expect(mule.newGameDialog).toBeVisible();
     await mule.page.unroute('**/moves');
     await mule.newGameButton.click();
     await expect(mule.status).toContainText('Du bist am Zug. Setze einen Stein');
@@ -216,7 +315,7 @@ test.describe('Texte', () => {
 
     await expect(mule.status).toContainText('Der Computer hat gewonnen.');
     await expect(mule.status).toContainText('Du kannst keinen Stein mehr ziehen.');
-    await expect(mule.newGameButton).toBeVisible();
+    await expect(mule.playAgainButton).toBeVisible();
   });
 
   test('eine dreifache Wiederholung wird als Grund für das Unentschieden genannt', async ({ mule }) => {
@@ -234,6 +333,33 @@ test.describe('Texte', () => {
 });
 
 test.describe('Darstellung und Barrierefreiheit', () => {
+  test('auf einem Laptop mit 1280 × 720 passt die ganze Seite ohne Scrollen auf den Bildschirm', async ({ mule }) => {
+    await mule.page.setViewportSize({ width: 1280, height: 720 });
+    // A long game: the move list must scroll inside the panel instead of pushing the page down
+    await mule.page.route('**/api/games/*', async (route) => {
+      const response = await route.fetch();
+      const game = await response.json();
+      const moves = Array.from({ length: 60 }, (_, i) => ({ type: 'SET', color: i % 2 ? 'BLACK' : 'WHITE', to: i % 24 }));
+      await route.fulfill({ response, json: { ...game, moves } });
+    });
+    await mule.openPosition({ white: [...MULE_READY.white], black: [...MULE_READY.black] });
+
+    const overflow = await mule.page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await expect(mule.page.getByRole('button', { name: 'Neues Spiel', exact: true })).toBeInViewport({ ratio: 1 });
+    await expect(mule.ratingSwitch).toBeInViewport({ ratio: 1 });
+  });
+
+  test('auf einem schmalen Bildschirm steht der Titel über dem Brett', async ({ mule }) => {
+    await mule.page.setViewportSize({ width: 390, height: 844 });
+    await mule.openNewGame();
+
+    const title = await mule.page.getByRole('heading', { name: 'Mühle' }).boundingBox();
+    const board = await mule.page.getByRole('group', { name: 'Spielbrett' }).boundingBox();
+    expect(title!.y + title!.height).toBeLessThanOrEqual(board!.y);
+    await expect(mule.page.getByRole('button', { name: 'Neues Spiel', exact: true })).toBeInViewport();
+  });
+
   test('auf einem 375 px breiten Bildschirm passt alles ohne seitliches Scrollen', async ({ mule }) => {
     await mule.page.setViewportSize({ width: 375, height: 740 });
     await mule.openNewGame();
@@ -256,6 +382,27 @@ test.describe('Darstellung und Barrierefreiheit', () => {
 
   test('die Startseite hat keine schweren Barrierefreiheitsfehler', async ({ mule }) => {
     await mule.openNewGame();
+
+    const results = await new AxeBuilder({ page: mule.page }).analyze();
+    const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+
+    expect(serious.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  });
+
+  test('der Dialog für ein neues Spiel hat keine schweren Barrierefreiheitsfehler', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.openNewGameDialog();
+
+    const results = await new AxeBuilder({ page: mule.page }).analyze();
+    const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+
+    expect(serious.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  });
+
+  test('mit eingeschalteter Bewertung gibt es keine schweren Barrierefreiheitsfehler', async ({ mule }) => {
+    await mule.openPosition({ white: [...MULE_READY.white], black: [...MULE_READY.black] });
+    await mule.ratingSwitch.check();
+    await expect(mule.field('g4')).toHaveClass(/rated-/);
 
     const results = await new AxeBuilder({ page: mule.page }).analyze();
     const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');

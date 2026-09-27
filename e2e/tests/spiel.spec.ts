@@ -8,21 +8,65 @@ test.describe('Spielbeginn', () => {
     await expect(mule.status).toContainText('Du bist am Zug. Setze einen Stein auf einen freien Punkt.');
     await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
     await expect(mule.player('Du')).toHaveAccessibleName('Du, Weiß: 9 Steine zu setzen');
-    await expect(mule.player('Computer')).toHaveAccessibleName('Computer, Schwarz: 9 Steine zu setzen');
+    await expect(mule.player('Computer')).toHaveAccessibleName('Computer (Mittel), Schwarz: 9 Steine zu setzen');
     await expect(mule.page.getByText('Noch kein Zug gespielt.')).toBeVisible();
   });
 
   test('als Schwarz eröffnet der Computer', async ({ mule }) => {
     await mule.openNewGame();
 
-    await mule.page.getByText('Neues Spiel', { exact: true }).click();
+    await mule.openNewGameDialog();
     await mule.page.getByRole('radio', { name: 'Schwarz' }).check();
-    await mule.page.getByRole('radio', { name: 'locker' }).check();
+    await mule.levelSlider.fill('1');
     await mule.newGameButton.click();
 
+    await expect(mule.newGameDialog).toBeHidden();
     await mule.expectHumanTurn();
     await expect(mule.page.getByRole('button', { name: /, weißer Stein$/ })).toHaveCount(1);
     await expect(mule.player('Du')).toHaveAccessibleName(/^Du, Schwarz/);
+    await expect(mule.player('Computer')).toHaveAccessibleName(/^Computer \(Anfänger\), Weiß/);
+  });
+});
+
+test.describe('Neues Spiel', () => {
+  test('alle Einstellungen und der Startknopf liegen im sichtbaren Bereich', async ({ mule }) => {
+    await mule.openNewGame();
+
+    await mule.openNewGameDialog();
+
+    await expect(mule.page.getByRole('radio', { name: 'Weiß, du beginnst' })).toBeInViewport({ ratio: 1 });
+    await expect(mule.levelSlider).toBeInViewport({ ratio: 1 });
+    await expect(mule.newGameButton).toBeInViewport({ ratio: 1 });
+  });
+
+  test('der Schieberegler nennt die Stufe und merkt sie sich für das nächste Spiel', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.openNewGameDialog();
+
+    await mule.levelSlider.fill('5');
+    await expect(mule.levelSlider).toHaveAttribute('aria-valuetext', 'Meister');
+    await expect(mule.newGameDialog).toContainText('verzeiht kaum einen Fehler');
+    await mule.levelSlider.fill('1');
+    await expect(mule.levelSlider).toHaveAttribute('aria-valuetext', 'Anfänger');
+    await mule.newGameButton.click();
+    await mule.expectHumanTurn();
+
+    await mule.openNewGameDialog();
+    await expect(mule.levelSlider).toHaveValue('1');
+  });
+
+  test('Abbrechen lässt das laufende Spiel stehen', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.field('d6').click();
+    await mule.expectHumanTurn();
+
+    await mule.openNewGameDialog();
+    await mule.levelSlider.fill('4');
+    await mule.page.getByRole('button', { name: 'Abbrechen' }).click();
+
+    await expect(mule.newGameDialog).toBeHidden();
+    await mule.expectStone('d6', 'weißer Stein');
+    await expect(mule.player('Computer')).toHaveAccessibleName(/^Computer \(Mittel\)/);
   });
 });
 
@@ -42,6 +86,9 @@ test.describe('Setzen', () => {
   test('ein Zug lässt sich allein mit der Tastatur spielen', async ({ mule }) => {
     await mule.openNewGame();
 
+    // The header with "Neues Spiel" comes first, then the board
+    await mule.page.keyboard.press('Tab');
+    await expect(mule.page.getByRole('button', { name: 'Neues Spiel', exact: true })).toBeFocused();
     await mule.page.keyboard.press('Tab');
     await expect(mule.field('a7')).toBeFocused();
     await mule.page.keyboard.press('Enter');
@@ -93,7 +140,7 @@ test.describe('Ziehen und Schlagen', () => {
     await mule.field('d1').click();
 
     await mule.expectStone('g7', 'weißer Stein');
-    await expect(mule.player('Computer')).toHaveAccessibleName('Computer, Schwarz: 3 Steine, darf springen, 6 verloren');
+    await expect(mule.player('Computer')).toHaveAccessibleName('Computer (Mittel), Schwarz: 3 Steine, darf springen, 6 verloren');
     await mule.expectHumanTurn();
   });
 
@@ -134,6 +181,7 @@ test.describe('Spielende', () => {
 
     await expect(mule.status).toContainText('Du hast gewonnen.');
     await expect(mule.status).toContainText('Der Computer hat nur noch zwei Steine.');
+    await mule.playAgainButton.click();
     await expect(mule.newGameButton).toBeVisible();
   });
 
@@ -167,10 +215,37 @@ test.describe('Spielende', () => {
     await mule.field('d6').click();
     await mule.expectHumanTurn();
 
-    await mule.page.getByText('Neues Spiel', { exact: true }).click();
+    await mule.openNewGameDialog();
     await mule.newGameButton.click();
 
     await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
     await expect(mule.page.getByText('Noch kein Zug gespielt.')).toBeVisible();
+  });
+});
+
+test.describe('Züge bewerten', () => {
+  test('vor dem Setzen ist der Punkt, der eine Mühle verhindert, sehr gut und jeder andere schlecht', async ({ mule }) => {
+    // Black threatens to close a7-d7-g7; only a white stone on g7 stops it
+    await mule.openPosition({
+      white: ['d6', 'd2'], whiteStonesInHand: 7,
+      black: ['a7', 'd7', 'f4'], blackStonesInHand: 6,
+    });
+
+    await mule.ratingSwitch.check();
+
+    await expect(mule.field('g7')).toHaveAccessibleName('g7, frei, sehr gut');
+    await expect(mule.field('a1')).toHaveAccessibleName('a1, frei, schlecht');
+    await expect(mule.page.getByRole('list', { name: 'Farben der Bewertung' })).toBeVisible();
+  });
+
+  test('beim Ziehen zeigt die Bewertung erst den Stein und dann das Ziel', async ({ mule }) => {
+    // White closes b6-d6-f6 with d7 to d6 before Black can block it with d5 to d6
+    await mule.openPosition({ white: ['d7', 'b6', 'f6', 'a1', 'b4'], black: ['d5', 'e4', 'd3', 'g1', 'd1'] });
+    await mule.ratingSwitch.check();
+
+    await expect(mule.field('d7')).toHaveAccessibleName('d7, weißer Stein, sehr gut');
+    await mule.field('d7').click();
+
+    await expect(mule.field('d6')).toHaveAccessibleName('d6, frei, sehr gut');
   });
 });

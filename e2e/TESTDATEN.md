@@ -11,7 +11,9 @@ Kein Test liest das Spiel eines anderen, darum laufen alle parallel und einzeln.
 **Stellungen.** Tests, die nicht beim leeren Brett beginnen, legen ihre Stellung über `POST /api/test/games` an
 (`MulePage.openPosition`, Felder in der Notation a7…g1). Die API zählt Steine, die weder auf dem Brett noch in
 der Hand sind, als verloren; vier Steine auf dem Brett und keiner in der Hand heißt also fünf verloren.
-Der Computer spielt dort immer locker (Tiefe 2), damit die Antwort schnell kommt.
+Der Computer spielt dort und in `openNewGame` auf der Stufe „Mittel“ (Tiefe 2): Die Antwort kommt sofort, und eine
+Mühle, die er schließen kann, schließt er immer. Die beiden schwächeren Stufen wählen zufällig unter ähnlich guten
+Zügen und taugen darum nicht für Tests, die einen bestimmten Zug des Computers erwarten.
 
 **Test-API.** Nur für Tests. Sie legt beliebige, auch regelwidrige Stellungen an und darf auf keinem Server
 für echte Spieler eingeschaltet sein. Der Server warnt beim Start im Log, wenn sie aktiv ist.

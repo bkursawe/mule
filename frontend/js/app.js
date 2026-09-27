@@ -5,8 +5,23 @@ import { BoardView, fieldName } from './board.js';
 
 const GAME_KEY = 'mule.game';
 const SETTINGS_KEY = 'mule.settings';
+const RATINGS_KEY = 'mule.ratings';
 const COLOR_NAMES = { WHITE: 'Weiß', BLACK: 'Schwarz' };
 const COMPUTER_DELAY = 450;
+
+/** The stops of the slider, weakest first, with the names of the backend. */
+const LEVELS = [
+  { strength: 'BEGINNER', name: 'Anfänger', note: 'Schließt seine Mühlen, achtet aber nicht auf deine.' },
+  { strength: 'EASY', name: 'Leicht', note: 'Denkt nur an seinen eigenen Zug und lässt dir oft eine Mühle offen.' },
+  { strength: 'MEDIUM', name: 'Mittel', note: 'Sieht deinen nächsten Zug voraus und blockt offene Mühlen.' },
+  { strength: 'HARD', name: 'Stark', note: 'Denkt eine Sekunde lang viele Züge voraus.' },
+  { strength: 'MASTER', name: 'Meister', note: 'Denkt drei Sekunden lang und verzeiht kaum einen Fehler.' },
+];
+const DEFAULT_SETTINGS = { humanColor: 'WHITE', strength: 'EASY' };
+
+// Ratings of the backend, best last; neutral moves get no extra words
+const RATINGS = ['BAD', 'NEUTRAL', 'GOOD'];
+const RATING_WORDS = { GOOD: 'sehr gut', BAD: 'schlecht' };
 
 const dom = {
   board: document.getElementById('board'),
@@ -16,8 +31,18 @@ const dom = {
   computer: document.getElementById('player-computer'),
   moves: document.getElementById('moves'),
   noMoves: document.getElementById('no-moves'),
+  playAgain: document.getElementById('play-again'),
+  rateMoves: document.getElementById('rate-moves'),
+  ratingNote: document.getElementById('rating-note'),
+  ratingLegend: document.getElementById('rating-legend'),
+  newGameOpen: document.getElementById('new-game-open'),
   newGame: document.getElementById('new-game'),
   form: document.getElementById('new-game-form'),
+  cancel: document.getElementById('new-game-cancel'),
+  level: document.getElementById('level'),
+  levelName: document.getElementById('level-name'),
+  levelNote: document.getElementById('level-note'),
+  levelScale: document.querySelector('.level-scale'),
 };
 
 let game = null; // the game as the backend sent it
@@ -26,6 +51,11 @@ let selected = null; // field of the stone the human wants to move
 let pending = null; // a move that closes a mule and still needs the stone to capture
 let message = null; // texts that replace the status, e.g. after an error
 let motion = null; // the move to animate with the next render
+
+let ratingsOn = false; // the human wants the moves rated
+let ratings = null; // the ratings of the position shown: { position, byMove }
+let ratingsLoading = null; // the position whose ratings are on the way
+let ratingsFailed = null; // the position whose ratings could not be loaded
 
 const view = new BoardView(dom.board, activate);
 
@@ -37,7 +67,6 @@ async function startGame(humanColor, strength) {
     selected = null;
     pending = null;
     motion = null;
-    dom.newGame.open = false;
   });
   if (isComputerTurn()) await computerTurn();
 }
@@ -80,6 +109,49 @@ async function run(action) {
 
 function pause(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+// ---------------------------------------------------------------- ratings
+
+/** Identifies the position shown, so late ratings of an earlier position are dropped. */
+function positionKey() {
+  return `${game.id}:${game.moves.length}`;
+}
+
+/** Asks the backend once per position how good the moves of the human are. The board stays usable meanwhile. */
+async function requestRatings() {
+  if (!ratingsOn || !isHumanTurn()) return;
+  const position = positionKey();
+  if ([ratings?.position, ratingsLoading, ratingsFailed].includes(position)) return;
+  ratingsLoading = position;
+  renderRatingNote();
+  try {
+    const answer = await api.rateMoves(game.id);
+    if (`${game.id}:${answer.moveNumber}` === position) {
+      ratings = { position, byMove: new Map(answer.moves.map(({ move, rating }) => [moveKey(move), rating])) };
+    }
+  } catch {
+    // Without ratings the game simply goes on
+    ratingsFailed = position;
+  } finally {
+    if (ratingsLoading === position) ratingsLoading = null;
+    render();
+  }
+}
+
+/** The ratings of the moves in the position shown, or null. */
+function shownRatings() {
+  return ratingsOn && game && ratings?.position === positionKey() ? ratings.byMove : null;
+}
+
+/** The best rating of some moves: a field is as good as the best move that ends or starts there. */
+function bestRating(byMove, moves) {
+  const found = moves.map((move) => RATINGS.indexOf(byMove.get(moveKey(move)))).filter((index) => index >= 0);
+  return found.length > 0 ? RATINGS[Math.max(...found)] : null;
+}
+
+function moveKey(move) {
+  return [move.type, move.from ?? '', move.to, move.capture ?? ''].join(' ');
 }
 
 // ---------------------------------------------------------------- input
@@ -129,7 +201,8 @@ function sameMove(a, b) {
 }
 
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || busy) return;
+  // In the dialog Esc closes the dialog and leaves the board as it is
+  if (event.key !== 'Escape' || busy || dom.newGame.open) return;
   if (pending || selected !== null) {
     pending = null;
     selected = null;
@@ -137,12 +210,62 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+dom.rateMoves.addEventListener('change', () => {
+  ratingsOn = dom.rateMoves.checked;
+  save(RATINGS_KEY, String(ratingsOn));
+  render();
+});
+
+// ---------------------------------------------------------------- new game dialog
+
+function openNewGame() {
+  showSettings(loadSettings());
+  if (!dom.newGame.open) dom.newGame.showModal();
+}
+
+dom.newGameOpen.addEventListener('click', openNewGame);
+dom.playAgain.addEventListener('click', openNewGame);
+dom.cancel.addEventListener('click', () => dom.newGame.close());
+dom.level.addEventListener('input', renderLevel);
+
+// A click on the backdrop closes the dialog. The form fills the dialog, so only the backdrop hits the dialog itself;
+// a drag that starts on the slider and ends outside does not count.
+let pressedOnBackdrop = false;
+dom.newGame.addEventListener('pointerdown', (event) => {
+  pressedOnBackdrop = event.target === dom.newGame;
+});
+dom.newGame.addEventListener('click', (event) => {
+  if (pressedOnBackdrop && event.target === dom.newGame) dom.newGame.close();
+});
+
 dom.form.addEventListener('submit', (event) => {
   event.preventDefault();
-  const settings = Object.fromEntries(new FormData(dom.form));
+  const data = new FormData(dom.form);
+  const settings = { humanColor: data.get('humanColor'), strength: LEVELS[Number(data.get('level')) - 1].strength };
   save(SETTINGS_KEY, JSON.stringify(settings));
+  dom.newGame.close();
   startGame(settings.humanColor, settings.strength);
 });
+
+function showSettings({ humanColor, strength }) {
+  dom.form.elements.humanColor.value = humanColor;
+  dom.level.value = String(levelIndex(strength) + 1);
+  renderLevel();
+}
+
+function renderLevel() {
+  const index = Number(dom.level.value) - 1;
+  const { name, note } = LEVELS[index];
+  dom.levelName.textContent = name;
+  dom.levelNote.textContent = note;
+  dom.level.setAttribute('aria-valuetext', name);
+  [...dom.levelScale.children].forEach((stop, stopIndex) => stop.classList.toggle('current', stopIndex === index));
+}
+
+function levelIndex(strength) {
+  const index = LEVELS.findIndex((level) => level.strength === strength);
+  return index >= 0 ? index : levelIndex(DEFAULT_SETTINGS.strength);
+}
 
 // ---------------------------------------------------------------- state helpers
 
@@ -188,20 +311,30 @@ function render() {
   dom.status.textContent = status;
   dom.detail.textContent = detail;
   dom.status.classList.toggle('result', Boolean(game) && !isOngoing() && !message);
+  renderRatingNote();
   if (!game) return;
 
   renderBoard();
   renderPlayer(dom.human, game.humanColor, 'Du');
-  renderPlayer(dom.computer, computerColor(), 'Computer');
+  renderPlayer(dom.computer, computerColor(), 'Computer', LEVELS.find((level) => level.strength === game.strength));
   renderMoves();
-  if (!isOngoing() && !busy) dom.newGame.open = true;
+  dom.playAgain.hidden = isOngoing() || busy;
+  requestRatings();
 }
 
 function renderBoard() {
   const board = shownBoard();
   const marks = new Map();
   const actionable = new Set();
+  const notes = new Map();
   const mark = (field, name) => marks.set(field, [...(marks.get(field) ?? []), name]);
+  const rated = shownRatings();
+  const rate = (field, moves) => {
+    const rating = rated && bestRating(rated, moves);
+    if (!rating) return;
+    mark(field, `rated-${rating.toLowerCase()}`);
+    if (RATING_WORDS[rating]) notes.set(field, RATING_WORDS[rating]);
+  };
 
   const last = game.moves.at(-1);
   if (last && !pending) {
@@ -216,19 +349,29 @@ function renderBoard() {
       for (const move of moves.filter((m) => sameMove(m, pending))) {
         mark(move.capture, 'capturable');
         actionable.add(move.capture);
+        rate(move.capture, [move]);
       }
     } else if (humanPlayer().phase === 'SETTING') {
-      moves.forEach((m) => actionable.add(m.to));
+      for (const [field, options] of groupBy(moves, (m) => m.to)) {
+        actionable.add(field);
+        // Free points only get a dot when there is a rating to show
+        if (rated) mark(field, 'target');
+        rate(field, options);
+      }
     } else {
-      for (const move of moves) {
-        actionable.add(move.from);
-        if (selected === null) mark(move.from, 'movable');
+      for (const [field, options] of groupBy(moves, (m) => m.from)) {
+        actionable.add(field);
+        if (selected === null) {
+          mark(field, 'movable');
+          rate(field, options);
+        }
       }
       if (selected !== null) {
         mark(selected, 'selected');
-        for (const move of moves.filter((m) => m.from === selected)) {
-          mark(move.to, 'target');
-          actionable.add(move.to);
+        for (const [field, options] of groupBy(moves.filter((m) => m.from === selected), (m) => m.to)) {
+          mark(field, 'target');
+          actionable.add(field);
+          rate(field, options);
         }
       }
     }
@@ -236,26 +379,29 @@ function renderBoard() {
 
   const labels = board.map((color, field) => {
     const stone = color === null ? 'frei' : `${color === 'WHITE' ? 'weißer' : 'schwarzer'} Stein`;
-    return `${fieldName(field)}, ${stone}`;
+    const note = notes.get(field);
+    return note ? `${fieldName(field)}, ${stone}, ${note}` : `${fieldName(field)}, ${stone}`;
   });
 
   view.render({ board, marks, labels, actionable, motion });
   motion = null;
 }
 
-function renderPlayer(item, color, name) {
+function renderPlayer(item, color, name, level) {
   const own = player(color);
   const opponent = player(color === 'WHITE' ? 'BLACK' : 'WHITE');
   const note = [phaseNote(own), own.stonesLost > 0 ? `${own.stonesLost} verloren` : null]
     .filter(Boolean)
     .join(', ');
+  const who = level ? `${name} (${level.name})` : name;
 
   item.classList.toggle('active', isOngoing() && game.activeColor === color);
-  item.setAttribute('aria-label', `${name}, ${COLOR_NAMES[color]}: ${note}`);
+  item.setAttribute('aria-label', `${who}, ${COLOR_NAMES[color]}: ${note}`);
   item.innerHTML = `
     <span class="token ${color.toLowerCase()}" aria-hidden="true"></span>
     <span class="player-text" aria-hidden="true">
       <span class="player-name">${name}</span>
+      ${level ? `<span class="player-level">${level.name}</span>` : ''}
       <span class="player-note">${note}</span>
     </span>
     <span class="pebbles" aria-hidden="true">
@@ -276,6 +422,21 @@ function phaseNote(own) {
 function pebbles(count, color, kind) {
   const pebble = `<span class="pebble ${color.toLowerCase()}"></span>`;
   return `<span class="${kind}">${pebble.repeat(count)}</span>`;
+}
+
+function renderRatingNote() {
+  dom.rateMoves.checked = ratingsOn;
+  dom.ratingLegend.hidden = !ratingsOn;
+  const position = game ? positionKey() : null;
+  if (!ratingsOn) {
+    dom.ratingNote.textContent = 'Zeigt vor deinem Zug, welche Züge gut und welche schlecht sind.';
+  } else if (ratingsLoading) {
+    dom.ratingNote.textContent = 'Deine Züge werden bewertet …';
+  } else if (position && ratingsFailed === position) {
+    dom.ratingNote.textContent = 'Die Bewertung ist gerade nicht verfügbar.';
+  } else {
+    dom.ratingNote.textContent = 'Die Punkte auf dem Brett zeigen, wie gut dein Zug dort wäre.';
+  }
 }
 
 function renderMoves() {
@@ -359,8 +520,8 @@ function errorTexts(error) {
     return { status: 'Der Server antwortet nicht.', detail: 'Prüfe, ob er läuft, und lade die Seite neu.' };
   }
   if (error.status === 404) {
-    dom.newGame.open = true;
-    return { status: 'Dieses Spiel gibt es nicht mehr.', detail: 'Beginne unten ein neues Spiel.' };
+    openNewGame();
+    return { status: 'Dieses Spiel gibt es nicht mehr.', detail: 'Beginne ein neues Spiel.' };
   }
   return { status: 'Der Zug wurde nicht angenommen.', detail: 'Lade die Seite neu, um den aktuellen Stand zu sehen.' };
 }
@@ -383,17 +544,31 @@ function load(key) {
   }
 }
 
-async function init() {
-  let settings = { humanColor: 'WHITE', strength: 'MEDIUM' };
+/** The settings of the last game, checked, so that settings of an older version still start a game. */
+function loadSettings() {
+  let saved = {};
   try {
-    settings = { ...settings, ...JSON.parse(load(SETTINGS_KEY) ?? '{}') };
+    saved = JSON.parse(load(SETTINGS_KEY) ?? '{}') ?? {};
   } catch {
     // Keep the defaults
   }
-  for (const [name, value] of Object.entries(settings)) {
-    const input = dom.form.querySelector(`input[name="${name}"][value="${value}"]`);
-    if (input) input.checked = true;
-  }
+  return {
+    humanColor: Object.hasOwn(COLOR_NAMES, saved.humanColor) ? saved.humanColor : DEFAULT_SETTINGS.humanColor,
+    strength: LEVELS[levelIndex(saved.strength)].strength,
+  };
+}
+
+function groupBy(items, keyOf) {
+  const groups = new Map();
+  for (const item of items) groups.set(keyOf(item), [...(groups.get(keyOf(item)) ?? []), item]);
+  return groups;
+}
+
+async function init() {
+  const settings = loadSettings();
+  dom.levelScale.innerHTML = LEVELS.map((level, index) => `<li style="--stop: ${index}">${level.name}</li>`).join('');
+  showSettings(settings);
+  ratingsOn = load(RATINGS_KEY) === 'true';
 
   const savedId = load(GAME_KEY);
   if (savedId) {

@@ -2,7 +2,7 @@
 import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
 export type Color = 'WHITE' | 'BLACK';
-export type Strength = 'EASY' | 'MEDIUM' | 'HARD';
+export type Strength = 'BEGINNER' | 'EASY' | 'MEDIUM' | 'HARD' | 'MASTER';
 
 /** Field names in the order of the engine: row by row from the top. */
 const FIELDS = [
@@ -19,6 +19,7 @@ export type Field = (typeof FIELDS)[number];
 /** A position for the test API, fields in the usual notation. The computer plays with the other color. */
 export interface Position {
   humanColor?: Color;
+  strength?: Strength;
   activeColor?: Color;
   white?: Field[];
   black?: Field[];
@@ -30,8 +31,11 @@ export interface Position {
 export class MulePage {
   constructor(readonly page: Page, private readonly request: APIRequestContext) {}
 
-  /** Opens the page for the first time: the app starts a new game with these settings. */
-  async openNewGame({ humanColor = 'WHITE' as Color, strength = 'EASY' as Strength } = {}) {
+  /**
+   * Opens the page for the first time: the app starts a new game with these settings.
+   * The computer plays "Mittel" by default: it answers at once and always closes a mule it can close.
+   */
+  async openNewGame({ humanColor = 'WHITE' as Color, strength = 'MEDIUM' as Strength } = {}) {
     await this.page.addInitScript((settings) => {
       if (sessionStorage.getItem('e2e.opened')) return;
       sessionStorage.setItem('e2e.opened', '1');
@@ -41,11 +45,11 @@ export class MulePage {
     await expect(this.status).not.toContainText('geladen');
   }
 
-  /** Starts a game at a position through the test API and opens it; the computer plays easy. */
+  /** Starts a game at a position through the test API and opens it; the computer plays "Mittel" by default. */
   async openPosition(position: Position) {
     const response = await this.request.post('/api/test/games', {
       data: {
-        strength: 'EASY',
+        strength: 'MEDIUM',
         ...position,
         white: (position.white ?? []).map(index),
         black: (position.black ?? []).map(index),
@@ -76,16 +80,40 @@ export class MulePage {
     return this.page.getByRole('status');
   }
 
+  /** The row of a player, named like "Du, Weiß: …" or "Computer (Mittel), Schwarz: …". */
   player(name: 'Du' | 'Computer'): Locator {
-    return this.page.getByRole('list', { name: 'Steine der Spieler' }).getByRole('listitem', { name: new RegExp(`^${name},`) });
+    return this.page.getByRole('list', { name: 'Steine der Spieler' }).getByRole('listitem', { name: new RegExp(`^${name}[ ,]`) });
   }
 
   get moveRounds(): Locator {
     return this.page.getByRole('region', { name: 'Züge' }).getByRole('listitem');
   }
 
+  /** The dialog for a new game and the button in it that starts the game. */
+  get newGameDialog(): Locator {
+    return this.page.getByRole('dialog', { name: 'Neues Spiel' });
+  }
+
   get newGameButton(): Locator {
     return this.page.getByRole('button', { name: 'Neues Spiel beginnen' });
+  }
+
+  get levelSlider(): Locator {
+    return this.page.getByRole('slider', { name: 'Stärke des Computers' });
+  }
+
+  /** Shown below the result when a game is over; opens the dialog as well. */
+  get playAgainButton(): Locator {
+    return this.page.getByRole('button', { name: 'Noch eine Partie' });
+  }
+
+  get ratingSwitch(): Locator {
+    return this.page.getByRole('switch', { name: 'Züge bewerten' });
+  }
+
+  async openNewGameDialog() {
+    await this.page.getByRole('button', { name: 'Neues Spiel', exact: true }).click();
+    await expect(this.newGameDialog).toBeVisible();
   }
 
   /** Waits until the computer has answered and it is the human's turn again. */
