@@ -1,5 +1,7 @@
 package de.praxisit.mule.server
 
+import de.praxisit.mule.Rating
+import de.praxisit.mule.White
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -16,6 +18,8 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 
 class GameApiTest {
     @Test
@@ -101,6 +105,61 @@ class GameApiTest {
         assertThat(response.status).isEqualTo(HttpStatusCode.Conflict)
     }
 
+    // The two strongest levels think for seconds, the weaker ones answer at once
+    @ParameterizedTest
+    @CsvSource("BEGINNER", "EASY", "MEDIUM")
+    fun `every level answers with a legal move`(strength: Strength) = apiTest { client ->
+        val game = client.startGame(ColorDto.WHITE, strength).body<GameDto>()
+        val afterHuman = client.playMove(game.id, MoveDto(MoveType.SET, ColorDto.WHITE, to = 4)).body<GameDto>()
+
+        val afterComputer = client.post("/api/games/${game.id}/computer-move").body<GameDto>()
+
+        assertThat(afterComputer.strength).isEqualTo(strength)
+        assertThat(afterHuman.legalMoves).contains(afterComputer.moves.last())
+    }
+
+    @Test
+    fun `rate the moves of the human`() = apiTest { client ->
+        val game = client.startGame(ColorDto.WHITE).body<GameDto>()
+
+        val response = client.get("/api/games/${game.id}/ratings")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val ratings = response.body<RatingsDto>()
+        assertThat(ratings.moveNumber).isEqualTo(0)
+        assertThat(ratings.moves.map { it.move }).containsExactlyInAnyOrderElementsOf(game.legalMoves)
+    }
+
+    @Test
+    fun `the ratings show the move that blocks a mule`() = testApplication {
+        // Black threatens to close 0-1-2, only a white stone on 2 stops it
+        val position = TestGameRequest(
+            white = listOf(4),
+            black = listOf(0, 1),
+            whiteStonesInHand = 8,
+            blackStonesInHand = 7
+        )
+        val games = GameService()
+        val game = games.create(White, Strength.MEDIUM, position.toGameState())
+        application { module(games) }
+        val client = createClient { install(ContentNegotiation) { json() } }
+
+        val ratings = client.get("/api/games/${game.id}/ratings").body<RatingsDto>()
+
+        val byField = ratings.moves.associate { it.move.to to it.rating }
+        assertThat(byField[2]).isEqualTo(Rating.GOOD)
+        assertThat(byField.filterKeys { it != 2 }.values).containsOnly(Rating.BAD)
+    }
+
+    @Test
+    fun `no ratings on the computer's turn`() = apiTest { client ->
+        val game = client.startGame(ColorDto.BLACK).body<GameDto>()
+
+        val response = client.get("/api/games/${game.id}/ratings")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.Conflict)
+    }
+
     @Test
     fun `an unknown game is not found`() = apiTest { client ->
         val response = client.get("/api/games/unknown")
@@ -130,10 +189,11 @@ class GameApiTest {
         block(client)
     }
 
-    private suspend fun HttpClient.startGame(humanColor: ColorDto): HttpResponse = post("/api/games") {
-        contentType(ContentType.Application.Json)
-        setBody(NewGameRequest(humanColor, Strength.EASY))
-    }
+    private suspend fun HttpClient.startGame(humanColor: ColorDto, strength: Strength = Strength.MEDIUM): HttpResponse =
+        post("/api/games") {
+            contentType(ContentType.Application.Json)
+            setBody(NewGameRequest(humanColor, strength))
+        }
 
     private suspend fun HttpClient.playMove(id: String, move: MoveDto): HttpResponse = post("/api/games/$id/moves") {
         contentType(ContentType.Application.Json)

@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TestGameRequest(
     val humanColor: ColorDto = ColorDto.WHITE,
-    val strength: Strength = Strength.EASY,
+    val strength: Strength = Strength.MEDIUM,
     val activeColor: ColorDto = ColorDto.WHITE,
     val white: List<Int> = emptyList(),
     val black: List<Int> = emptyList(),

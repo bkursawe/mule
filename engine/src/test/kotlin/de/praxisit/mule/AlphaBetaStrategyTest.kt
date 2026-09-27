@@ -50,6 +50,46 @@ class AlphaBetaStrategyTest {
         assertThat(minimax(state.play(move), DEPTH - 1, 1)).isEqualTo(minimax(state, DEPTH, 0))
     }
 
+    @ParameterizedTest
+    @CsvSource(
+        value = [
+            "0 3 7 8 9 10 16 19 22, 0, 1 2 5 23, 0, Black",
+            "0 4 9 13 19, 0, 1 10 12 20, 0, White",
+            "0 1, 7, 4, 8, Black",
+            "0 1 10 14, 0, 19 21 22, 0, White"
+        ]
+    )
+    fun `score every move with its minimax value`(
+        whiteStones: String,
+        whiteStonesToSet: Int,
+        blackStones: String,
+        blackStonesToSet: Int,
+        colorName: String
+    ) {
+        val color = if (colorName == "White") White else Black
+        val state =
+            createState(whiteStones.toFields(), whiteStonesToSet, blackStones.toFields(), blackStonesToSet, color)
+
+        val scores = AlphaBetaStrategy(DEPTH, evaluation).scoreMoves(state).last()
+
+        // The scores are seen from the player to move, minimax from White
+        val sign = if (color == White) 1.0 else -1.0
+        assertThat(scores.keys).containsExactlyInAnyOrderElementsOf(state.legalMoves)
+        scores.forEach { (move, score) ->
+            assertThat(score).`as`(move.toString()).isEqualTo(sign * minimax(state.play(move), DEPTH - 1, 1))
+        }
+    }
+
+    @Test
+    fun `score the moves for every depth`() {
+        val state = createBackAndForthState()
+
+        val scores = AlphaBetaStrategy(DEPTH, evaluation).scoreMoves(state)
+
+        assertThat(scores).hasSize(DEPTH)
+        assertThat(scores[0]).isEqualTo(AlphaBetaStrategy(1, evaluation).scoreMoves(state).single())
+    }
+
     @Test
     fun `win as fast as possible`() {
         val state = createState(listOf(0, 1, 10, 14), 0, listOf(19, 21, 22), 0, White)

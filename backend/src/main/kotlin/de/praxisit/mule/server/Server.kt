@@ -61,6 +61,7 @@ fun Application.module(
 /**
  * POST /api/games starts a game, GET /api/games/{id} returns it,
  * POST /api/games/{id}/moves plays a move of the human and POST /api/games/{id}/computer-move one of the computer.
+ * GET /api/games/{id}/ratings rates the moves the human can play, as a help for beginners.
  */
 fun Route.gameRoutes(games: GameService) {
     route("/api/games") {
@@ -77,6 +78,9 @@ fun Route.gameRoutes(games: GameService) {
         }
         post("/{id}/computer-move") {
             call.respond(games.playComputerMove(call.gameId))
+        }
+        get("/{id}/ratings") {
+            call.respond(games.rateMoves(call.gameId))
         }
     }
 }
