@@ -107,6 +107,10 @@ export class MulePage {
     return this.page.getByRole('button', { name: 'Noch eine Partie' });
   }
 
+  get takeBackButton(): Locator {
+    return this.page.getByRole('button', { name: 'Zug zurücknehmen' });
+  }
+
   get ratingSwitch(): Locator {
     return this.page.getByRole('switch', { name: 'Züge bewerten' });
   }
@@ -137,9 +141,14 @@ export class MulePage {
 
   /** Counts the moves the page sends to the backend. */
   countMoveRequests(): { count: number } {
+    return this.countPostRequests('/moves');
+  }
+
+  /** Counts the POST requests whose URL ends with the path, like "/take-back". */
+  countPostRequests(path: string): { count: number } {
     const counter = { count: 0 };
     this.page.on('request', (request) => {
-      if (request.method() === 'POST' && request.url().endsWith('/moves')) counter.count++;
+      if (request.method() === 'POST' && request.url().endsWith(path)) counter.count++;
     });
     return counter;
   }

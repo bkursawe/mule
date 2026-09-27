@@ -39,4 +39,5 @@ export const api = {
   playMove: (id, move) => request('POST', `/api/games/${encodeURIComponent(id)}/moves`, move),
   computerMove: (id) => request('POST', `/api/games/${encodeURIComponent(id)}/computer-move`),
   rateMoves: (id) => request('GET', `/api/games/${encodeURIComponent(id)}/ratings`, undefined, isRatings),
+  takeBack: (id) => request('POST', `/api/games/${encodeURIComponent(id)}/take-back`),
 };

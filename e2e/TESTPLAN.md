@@ -16,6 +16,9 @@ Routen: `POST /api/games`, `GET /api/games/{id}`, `POST /api/games/{id}/moves`,
   oder einem Klick daneben.
 - Schalter „Züge bewerten“: Vor dem Zug des Menschen fragt die Seite `GET /api/games/{id}/ratings` und färbt die
   Punkte (sehr gut, neutral, schlecht); der zugängliche Name bekommt „, sehr gut“ oder „, schlecht“ angehängt.
+- Knopf „Zug zurücknehmen“: nimmt über `POST /api/games/{id}/take-back` den letzten Zug des Menschen und die Antwort
+  des Computers zurück, auch nach Spielende; eine Mühle, deren Schlag noch fehlt, nimmt er ohne Anfrage zurück.
+  Gesperrt, solange nichts zurückzunehmen ist oder der Computer überlegt.
 - Gespeichert werden `mule.game` (Spiel-ID), `mule.settings` und `mule.ratings` im `localStorage`.
 
 **Zustände der Oberfläche** (`texts()` in `app.js`):
@@ -65,6 +68,9 @@ Legende: ✅ abgedeckt · ➖ bewusst ausgelassen · ⏳ offen
 | Esc bricht Mühlenzug ab | ✅ | |
 | Eingabe während eigenem Request / Computerzug / nach Spielende | ✅ | Requests werden gezielt angehalten, kein Warten auf Zeit |
 | Neues Spiel, während der Computer rechnet oder das gespeicherte Spiel lädt | ✅ | F-04: die späte Antwort wird verworfen |
+| Zug zurücknehmen: nach dem Setzen, nach einer Niederlage, danach anders spielen | ✅ | `spiel.spec.ts` › Zug zurücknehmen |
+| Zug zurücknehmen: gesperrt ohne eigenen Zug und während der Computer überlegt | ✅ | gesperrter Knopf mit `force` geklickt, keine Anfrage |
+| Zug zurücknehmen: offene Schlag-Auswahl, Bewertung danach | ✅ | Bewertung gehört zur Stellung, nicht zur Zugzahl |
 | Server 500, Abbruch, 404, kaputtes JSON, JSON ohne Spiel | ✅ | die beiden letzten waren F-01, behoben |
 | 409 durch veralteten zweiten Tab | ✅ | |
 | Neuladen: Spiel bleibt, offene Schlag-Auswahl verworfen | ✅ | |

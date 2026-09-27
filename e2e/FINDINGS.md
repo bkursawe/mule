@@ -23,7 +23,7 @@ ebenfalls behoben.
 | Niedrig | 1 (1) |
 | Kosmetisch | 0 |
 
-**Tests:** 71 insgesamt (53 Desktop, 18 Mobil) · 71 grün · 0 rot · 0 als bekannter Fehler markiert.
+**Tests:** 79 insgesamt (57 Desktop, 22 Mobil) · 79 grün · 0 rot · 0 als bekannter Fehler markiert.
 Stabil in fünf Wiederholungen je Test (`--repeat-each=5`), die neuen Tests vom 27.09.2026 ebenso.
 
 ---
@@ -152,6 +152,7 @@ Der erste Lauf hatte acht rote Tests; alle lagen am Test, nicht an der App:
 | Spielende und Remis | ✅ | ✅ | Wiederholung nur über umgeschriebene Serverantwort |
 | Neues Spiel, Einstellungen | ✅ | ✅ | Dialog, Schieberegler; Stufen Stark und Meister nicht |
 | Bewertung der Züge | ✅ | ✅ | Laden, Ausfall, veraltete Antworten |
+| Zug zurücknehmen | ✅ | ✅ | gesperrte Zustände, offene Schlag-Auswahl, Bewertung danach |
 | Fehler der API | – | ✅ | 500, Abbruch, 404, 409, kaputtes JSON |
 | Speicher im Browser | ✅ | ✅ | unbekannte ID, gesperrter Speicher |
 | Bedienbarkeit | ✅ | ✅ | Tastatur, axe, 375 px, Touch, reduzierte Bewegung |
