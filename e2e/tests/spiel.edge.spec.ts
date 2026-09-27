@@ -236,6 +236,64 @@ test.describe('Bewertung der Züge', () => {
   });
 });
 
+test.describe('Zug zurücknehmen, Randfälle', () => {
+  test('eröffnet der Computer, gibt es noch nichts zurückzunehmen', async ({ mule }) => {
+    await mule.openNewGame({ humanColor: 'BLACK' });
+    await mule.expectHumanTurn();
+
+    await expect(mule.takeBackButton).toBeDisabled();
+  });
+
+  test('während der Computer überlegt, lässt sich nichts zurücknehmen', async ({ mule }) => {
+    await mule.openNewGame();
+    const computer = await mule.holdRequests('**/computer-move');
+    const takeBacks = mule.countPostRequests('/take-back');
+
+    await mule.field('d6').click();
+    await computer.arrived;
+    await expect(mule.takeBackButton).toBeDisabled();
+    await mule.takeBackButton.click({ force: true });
+    computer.release();
+
+    await mule.expectHumanTurn();
+    await mule.expectStone('d6', 'weißer Stein');
+    expect(takeBacks.count).toBe(0);
+  });
+
+  test('eine Mühle, deren Schlag noch fehlt, nimmt der Knopf ohne Anfrage an den Server zurück', async ({ mule }) => {
+    await mule.openPosition({ white: [...MULE_READY.white], black: [...MULE_READY.black] });
+    const takeBacks = mule.countPostRequests('/take-back');
+    await mule.field('g4').click();
+    await mule.field('g7').click();
+    await expect(mule.status).toContainText('Mühle!');
+
+    await mule.takeBackButton.click();
+
+    await mule.expectStone('g7', 'frei');
+    await mule.expectStone('g4', 'weißer Stein');
+    await expect(mule.status).toContainText('Wähle einen Stein, den du ziehen willst.');
+    await expect(mule.takeBackButton).toBeDisabled();
+    expect(takeBacks.count).toBe(0);
+  });
+
+  test('nach dem Zurücknehmen bewertet die Seite die alte Stellung wieder', async ({ mule }) => {
+    // Black threatens to close a7-d7-g7; a1 lets it happen
+    await mule.openPosition({
+      white: ['d6', 'd2'], whiteStonesInHand: 7,
+      black: ['a7', 'd7', 'f4'], blackStonesInHand: 6,
+    });
+    await mule.ratingSwitch.check();
+    await expect(mule.field('a1')).toHaveAccessibleName('a1, frei, schlecht');
+    await mule.field('a1').click();
+    await expect(mule.status).toContainText('Er hat eine Mühle geschlossen');
+
+    await mule.takeBackButton.click();
+
+    await expect(mule.field('g7')).toHaveAccessibleName('g7, frei, sehr gut');
+    await expect(mule.field('a1')).toHaveAccessibleName('a1, frei, schlecht');
+  });
+});
+
 test.describe('Server- und Netzwerkfehler', () => {
   test('ein Serverfehler beim Zug lässt das Brett unverändert und der Zug gelingt beim zweiten Versuch', async ({ mule }) => {
     await mule.openNewGame();

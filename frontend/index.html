@@ -28,7 +28,10 @@
       <p id="status" class="status">Das Spiel wird geladen.</p>
       <p id="detail" class="detail"></p>
     </div>
-    <button type="button" id="play-again" class="button play-again" aria-haspopup="dialog" hidden>Noch eine Partie</button>
+    <div class="turn-actions">
+      <button type="button" id="play-again" class="button" aria-haspopup="dialog" hidden>Noch eine Partie</button>
+      <button type="button" id="take-back" class="button quiet" disabled>Zug zurücknehmen</button>
+    </div>
 
     <ul class="players" aria-label="Steine der Spieler">
       <li class="player" id="player-human"></li>

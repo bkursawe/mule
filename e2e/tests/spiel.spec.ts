@@ -249,3 +249,41 @@ test.describe('Züge bewerten', () => {
     await expect(mule.field('d6')).toHaveAccessibleName('d6, frei, sehr gut');
   });
 });
+
+test.describe('Zug zurücknehmen', () => {
+  test('dein Zug und die Antwort des Computers lassen sich zurücknehmen', async ({ mule }) => {
+    await mule.openNewGame();
+    await expect(mule.takeBackButton).toBeDisabled();
+    await mule.field('d6').click();
+    await mule.expectHumanTurn();
+
+    await mule.takeBackButton.click();
+
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+    await expect(mule.page.getByText('Noch kein Zug gespielt.')).toBeVisible();
+    await expect(mule.status).toContainText('Du bist am Zug. Setze einen Stein auf einen freien Punkt.');
+    await expect(mule.status).toContainText('Dein Zug und die Antwort des Computers sind zurückgenommen.');
+    await expect(mule.player('Du')).toHaveAccessibleName('Du, Weiß: 9 Steine zu setzen');
+    await expect(mule.takeBackButton).toBeDisabled();
+  });
+
+  test('nach einer Niederlage lässt sich der letzte Zug zurücknehmen und besser spielen', async ({ mule }) => {
+    // Black threatens f4 to f2, closing b2-d2-f2; jumping to g1 loses, jumping to f2 blocks
+    await mule.openPosition({ white: ['a7', 'd7', 'e3'], black: ['b2', 'd2', 'f4', 'c5'] });
+    await mule.field('e3').click();
+    await mule.field('g1').click();
+    await expect(mule.status).toContainText('Der Computer hat gewonnen.');
+
+    await mule.takeBackButton.click();
+
+    await expect(mule.status).toContainText('Du hast nur noch drei Steine und darfst springen.');
+    await mule.expectStone('e3', 'weißer Stein');
+    await mule.expectStone('g1', 'frei');
+    await mule.expectStone('f2', 'frei');
+    await expect(mule.playAgainButton).toBeHidden();
+    await mule.field('e3').click();
+    await mule.field('f2').click();
+    await mule.expectStone('f2', 'weißer Stein');
+    await expect(mule.status).toContainText(/Der Computer (hat|ist) von [a-g][1-7] nach [a-g][1-7]/);
+  });
+});

@@ -77,7 +77,9 @@ Abhängigkeiten nur von oben nach unten:
    - Server: `Server.kt` (Routen, Fehler → 400/404/409), `GameService` (Spiele im Speicher, je Spiel ein Mutex,
      inaktive Spiele fliegen nach 6 h raus), `Dtos.kt` (JSON-Format). API: `POST /api/games`,
      `GET /api/games/{id}`, `POST /api/games/{id}/moves`, `POST /api/games/{id}/computer-move`,
-     `GET /api/games/{id}/ratings` (Bewertung der Züge des Menschen, je Stellung einmal berechnet, eigener Mutex).
+     `GET /api/games/{id}/ratings` (Bewertung der Züge des Menschen, je Stellung einmal berechnet, eigener Mutex),
+     `POST /api/games/{id}/take-back` (nimmt den letzten Zug des Menschen samt Antwort des Computers zurück; die
+     Sitzung hält dafür alle Zustände, der Bewertungs-Cache hängt am Zustand, nicht an der Zugzahl).
      `Strength` legt die fünf Stufen fest: `BEGINNER` und `EASY` schauen nur auf die Stellung nach ihrem eigenen Zug
      (`BEGINNER` übersieht dabei die Mühlen des Menschen), `MEDIUM` rechnet 2 Halbzüge, `HARD` 1 s, `MASTER` 3 s.
      `TestApi.kt`: `POST /api/test/games` legt ein Spiel in beliebiger Stellung an, nur mit `MULE_TEST_API=true`.
@@ -97,6 +99,7 @@ Abhängigkeiten nur von oben nach unten:
 - Kotlin-Style `official`. Code und Bezeichner auf Englisch, Texte der Oberfläche auf Deutsch (Du-Form).
 - Immutabilität bevorzugen: `copy(...)` statt Mutation, abgeleitete Werte als `by lazy`.
 - Tests: Namen in Backticks, `assertThat`/`assertThatThrownBy` von AssertJ, `@ParameterizedTest` mit `@CsvSource`, `@Nested`. Testzustände mit `createState(...)` aus `TestStates.kt` bauen, damit sie regelkonform sind.
+- Ein Test als Ausdruck `= runBlocking { … }` gibt den Wert der letzten Assertion zurück, und JUnit überspringt Testmethoden mit Rückgabewert still. Darum `runBlocking<Unit> { … }` schreiben.
 - `PerftTest` sichert die Zuggenerierung ab: Ändern sich die Zahlen, ist die Zuggenerierung falsch, nicht der Test.
 - Frontend-Design: Sandsteinplatte auf Moos, Kiesel aus Marmor und Basalt, Ocker nur für das, was eine
   Entscheidung verlangt (Ziele, Auswahl, Mühle). Die Bewertung der Züge färbt Punkte in Grünspan (sehr gut),

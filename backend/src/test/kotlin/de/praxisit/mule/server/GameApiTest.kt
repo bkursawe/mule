@@ -161,6 +161,30 @@ class GameApiTest {
     }
 
     @Test
+    fun `take back the last move of the human`() = apiTest { client ->
+        val game = client.startGame(ColorDto.WHITE).body<GameDto>()
+        client.playMove(game.id, MoveDto(MoveType.SET, ColorDto.WHITE, to = 4))
+        client.post("/api/games/${game.id}/computer-move")
+
+        val response = client.post("/api/games/${game.id}/take-back")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        val afterTakeBack = response.body<GameDto>()
+        assertThat(afterTakeBack.moves).isEmpty()
+        assertThat(afterTakeBack.board).containsOnlyNulls()
+        assertThat(afterTakeBack.legalMoves).hasSize(24)
+    }
+
+    @Test
+    fun `nothing to take back at the start`() = apiTest { client ->
+        val game = client.startGame(ColorDto.WHITE).body<GameDto>()
+
+        val response = client.post("/api/games/${game.id}/take-back")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.Conflict)
+    }
+
+    @Test
     fun `an unknown game is not found`() = apiTest { client ->
         val response = client.get("/api/games/unknown")
 

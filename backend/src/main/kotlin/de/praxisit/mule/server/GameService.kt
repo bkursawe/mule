@@ -44,23 +44,29 @@ class GameNotFoundException(id: String) : RuntimeException("No game with id $id"
 
 /**
  * A game between a human and the computer. Moves are played one after the other, guarded by [mutex].
+ * The human can take moves back, so the session keeps every state of the game.
  */
 class GameSession(
     val id: String,
     val humanColor: Color,
     val strength: Strength,
     now: Instant,
-    initialState: GameState = GameState()
+    initialState: GameState = GameState(),
+    private val computer: ChoosingStrategy = strength.createComputer(humanColor.opposite)
 ) {
-    private val computer = strength.createComputer(humanColor.opposite)
     private val mutex = Mutex()
     private val moves = mutableListOf<Move>()
-    private var state = initialState
 
-    // The ratings have a lock of their own, so the human can move while they are computed
+    // states[i] is the state after i moves, the last one is the current state
+    private val states = mutableListOf(initialState)
+    private val state: GameState
+        get() = states.last()
+
+    // The ratings have a lock of their own, so the human can move while they are computed. They belong to a state,
+    // not to a move number: after taking back moves, the same number can stand for another position.
     private val rater by lazy { MoveRater() }
     private val ratingMutex = Mutex()
-    private var ratings: RatingsDto? = null
+    private var ratings: Pair<GameState, RatingsDto>? = null
 
     @Volatile
     var lastAccess: Instant = now
@@ -96,13 +102,28 @@ class GameSession(
             state to moves.size
         }
         return ratingMutex.withLock {
-            ratings?.takeIf { it.moveNumber == moveNumber }
-                ?: withContext(Dispatchers.Default) { rater.rate(current).toDto(moveNumber) }.also { ratings = it }
+            ratings?.takeIf { (rated, _) -> rated === current }?.second
+                ?: withContext(Dispatchers.Default) { rater.rate(current).toDto(moveNumber) }
+                    .also { ratings = current to it }
         }
     }
 
+    /**
+     * Takes back the last move of the human together with the moves the computer played after it,
+     * so it is the human's turn again. Also possible after the end of the game, but not while the computer is to move.
+     */
+    suspend fun takeBack(now: Instant) = mutex.withLock {
+        lastAccess = now
+        check(state.result != Ongoing || state.activeColor == humanColor) { "It is the computer's turn" }
+        val lastHumanMove = moves.indexOfLast { it.color == humanColor }
+        check(lastHumanMove >= 0) { "There is no move of the human to take back" }
+        moves.subList(lastHumanMove, moves.size).clear()
+        states.subList(lastHumanMove + 1, states.size).clear()
+        toDto(state, moves)
+    }
+
     private fun play(move: Move): GameDto {
-        state = state.play(move)
+        states += state.play(move)
         moves += move
         return toDto(state, moves)
     }
@@ -133,6 +154,8 @@ class GameService(
     suspend fun playComputerMove(id: String) = session(id).playComputerMove(clock.instant())
 
     suspend fun rateMoves(id: String) = session(id).rateMoves(clock.instant())
+
+    suspend fun takeBack(id: String) = session(id).takeBack(clock.instant())
 
     private fun session(id: String) = sessions[id] ?: throw GameNotFoundException(id)
 

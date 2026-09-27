@@ -32,6 +32,7 @@ const dom = {
   moves: document.getElementById('moves'),
   noMoves: document.getElementById('no-moves'),
   playAgain: document.getElementById('play-again'),
+  takeBack: document.getElementById('take-back'),
   rateMoves: document.getElementById('rate-moves'),
   ratingNote: document.getElementById('rating-note'),
   ratingLegend: document.getElementById('rating-legend'),
@@ -51,6 +52,7 @@ let busy = false; // a request is running
 let selected = null; // field of the stone the human wants to move
 let pending = null; // a move that closes a mule and still needs the stone to capture
 let message = null; // texts that replace the status, e.g. after an error
+let notice = null; // a detail that replaces the last move of the computer until the next request, e.g. after taking back
 let motion = null; // the move to animate with the next render
 
 let ratingsOn = false; // the human wants the moves rated
@@ -92,6 +94,28 @@ async function computerTurn() {
   });
 }
 
+/** Takes back the last move of the human and the answer of the computer. A mule not yet sent is only undone here. */
+async function takeBack() {
+  if (pending) {
+    cancelMove();
+    return;
+  }
+  if (!canTakeBack()) return;
+  selected = null;
+  const before = game.moves.length;
+  await run(() => api.takeBack(game.id), () => {
+    notice = before - game.moves.length > 1
+      ? 'Dein Zug und die Antwort des Computers sind zurückgenommen.'
+      : 'Dein Zug ist zurückgenommen.';
+  });
+}
+
+/** Whether there is a move of the human to take back and the computer is not about to move. */
+function canTakeBack() {
+  return !busy && Boolean(game) && game.moves.some((move) => move.color === game.humanColor) &&
+    (!isOngoing() || game.activeColor === game.humanColor);
+}
+
 /**
  * Sends a request and shows the game it answers with, then calls `onAnswer`. The board is blocked meanwhile and
  * errors show as status. When a new game was started in the meantime, answer and error are dropped: they belong
@@ -101,6 +125,7 @@ async function run(request, onAnswer) {
   const own = generation;
   busy = true;
   message = null;
+  notice = null;
   render();
   let answer = null;
   let failure = null;
@@ -127,9 +152,12 @@ function pause(milliseconds) {
 
 // ---------------------------------------------------------------- ratings
 
-/** Identifies the position shown, so late ratings of an earlier position are dropped. */
+/**
+ * Identifies the position shown, so late ratings of an earlier position are dropped. The number of moves is not
+ * enough: after taking back moves, the same number can stand for another position.
+ */
 function positionKey() {
-  return `${game.id}:${game.moves.length}`;
+  return `${game.id}:${game.moves.map(moveKey).join(',')}`;
 }
 
 /** Asks the backend once per position how good the moves of the human are. The board stays usable meanwhile. */
@@ -141,7 +169,7 @@ async function requestRatings() {
   renderRatingNote();
   try {
     const answer = await api.rateMoves(game.id);
-    if (`${game.id}:${answer.moveNumber}` === position) {
+    if (positionKey() === position && answer.moveNumber === game.moves.length) {
       ratings = { position, byMove: new Map(answer.moves.map(({ move, rating }) => [moveKey(move), rating])) };
     }
   } catch {
@@ -214,15 +242,22 @@ function sameMove(a, b) {
   return a.type === b.type && a.from === b.from && a.to === b.to;
 }
 
-document.addEventListener('keydown', (event) => {
-  // In the dialog Esc closes the dialog and leaves the board as it is
-  if (event.key !== 'Escape' || busy || dom.newGame.open) return;
+/** Drops the mule-closing move that waits for its capture, or the stone chosen to move. */
+function cancelMove() {
   if (pending || selected !== null) {
     pending = null;
     selected = null;
     render();
   }
+}
+
+document.addEventListener('keydown', (event) => {
+  // In the dialog Esc closes the dialog and leaves the board as it is
+  if (event.key !== 'Escape' || busy || dom.newGame.open) return;
+  cancelMove();
 });
+
+dom.takeBack.addEventListener('click', takeBack);
 
 dom.rateMoves.addEventListener('change', () => {
   ratingsOn = dom.rateMoves.checked;
@@ -333,6 +368,7 @@ function render() {
   renderPlayer(dom.computer, computerColor(), 'Computer', LEVELS.find((level) => level.strength === game.strength));
   renderMoves();
   dom.playAgain.hidden = isOngoing() || busy;
+  dom.takeBack.disabled = !(pending || canTakeBack());
   requestRatings();
 }
 
@@ -483,10 +519,10 @@ function texts() {
   if (pending) {
     return {
       status: 'Mühle! Nimm einen Stein des Computers.',
-      detail: 'Wähle einen markierten Stein. Mit Esc nimmst du deinen Zug zurück.',
+      detail: 'Wähle einen markierten Stein. Mit Esc oder „Zug zurücknehmen“ nimmst du den Zug zurück.',
     };
   }
-  const detail = lastComputerMoveText();
+  const detail = notice ?? lastComputerMoveText();
   switch (humanPlayer().phase) {
     case 'SETTING':
       return { status: 'Du bist am Zug. Setze einen Stein auf einen freien Punkt.', detail };
