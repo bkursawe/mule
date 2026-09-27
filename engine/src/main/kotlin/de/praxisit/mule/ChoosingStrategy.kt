@@ -4,6 +4,8 @@ import de.praxisit.mule.GameResult.*
 import de.praxisit.mule.TranspositionTable.Bound.*
 import kotlin.Double.Companion.NEGATIVE_INFINITY
 import kotlin.Double.Companion.POSITIVE_INFINITY
+import kotlin.math.exp
+import kotlin.random.Random
 import kotlin.time.Duration
 
 /**
@@ -31,6 +33,37 @@ class SimpleChoosingStrategy(
 }
 
 /**
+ * Plays like a weaker player: scores every legal move with a search [depth] moves deep and chooses one at random.
+ * The better a move, the likelier it is chosen: a move [temperature] points worse than the best one is e times
+ * less likely. So the computer varies between moves of about the same value and hardly ever plays a clearly worse one;
+ * its mistakes come from the shallow search and the [evaluation].
+ */
+class WeightedRandomStrategy(
+    depth: Int,
+    private val temperature: Double,
+    evaluation: EvaluationStrategy = ExtendedEvaluationStrategy(),
+    private val random: Random = Random.Default
+) : ChoosingStrategy {
+    private val search = AlphaBetaStrategy(depth, evaluation)
+
+    init {
+        require(temperature > 0) { "The temperature must be positive" }
+    }
+
+    override fun chooseMove(state: GameState): Move {
+        val scores = search.scoreMoves(state).last()
+        val best = scores.values.max()
+        val weights = scores.mapValues { (_, score) -> exp((score - best) / temperature) }
+        var remaining = random.nextDouble() * weights.values.sum()
+        for ((move, weight) in weights) {
+            remaining -= weight
+            if (remaining < 0) return move
+        }
+        return scores.keys.last()
+    }
+}
+
+/**
  * Searches up to [depth] moves ahead with Negamax and alpha-beta pruning. The search deepens
  * iteratively and stops early after [timeLimit]; it then plays the best move of the deepest finished search.
  * All scores are seen from the player to move, a win scores [WIN] minus the moves needed to reach it.
@@ -46,13 +79,31 @@ class AlphaBetaStrategy(
     override fun chooseMove(state: GameState): Move {
         check(state.legalMoves.isNotEmpty()) { "No legal move" }
 
-        val search = Search(deadline = timeLimit?.let { System.nanoTime() + it.inWholeNanoseconds })
+        val search = Search(deadline())
         var bestMove = state.legalMoves.first()
         for (currentDepth in 1..depth) {
             bestMove = search.bestRootMove(state, currentDepth) ?: break
         }
         return bestMove
     }
+
+    /**
+     * Scores every legal move of the active player, seen from that player, with the same depth and time limit as
+     * [chooseMove]. Each move is searched with the full window, so the scores are exact and can be compared.
+     * Returns the scores of every finished depth, starting with depth 1: the deepest ones are the last.
+     */
+    fun scoreMoves(state: GameState): List<Map<Move, Double>> {
+        check(state.legalMoves.isNotEmpty()) { "No legal move" }
+
+        val search = Search(deadline())
+        val scores = mutableListOf<Map<Move, Double>>()
+        for (currentDepth in 1..depth) {
+            scores += search.rootScores(state, currentDepth) ?: break
+        }
+        return scores
+    }
+
+    private fun deadline() = timeLimit?.let { System.nanoTime() + it.inWholeNanoseconds }
 
     private inner class Search(private val deadline: Long?) {
         private val killerMoves = Array(depth + 1) { arrayOfNulls<Move>(2) }
@@ -65,6 +116,17 @@ class AlphaBetaStrategy(
             val (move, _) = bestMove(state, depth, 0, NEGATIVE_INFINITY, POSITIVE_INFINITY)
             finishedDepth = depth
             move
+        } catch (e: SearchTimeout) {
+            null
+        }
+
+        /** The score of every legal move after a search to [depth], or null if the time ran out before it finished. */
+        fun rootScores(state: GameState, depth: Int): Map<Move, Double>? = try {
+            val scores = orderedMoves(state, table[state.key]?.move, 0).associateWith { move ->
+                -negamax(state.play(move), depth - 1, 1, NEGATIVE_INFINITY, POSITIVE_INFINITY)
+            }
+            finishedDepth = depth
+            scores
         } catch (e: SearchTimeout) {
             null
         }

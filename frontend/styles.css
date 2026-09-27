@@ -40,6 +40,12 @@
   --marble: #f3efe6;
   --basalt: #262522;
   --ochre: #e0a93b;
+  --panel: #2c3528;
+
+  /* Ratings of the human's moves: verdigris for very good, brick for bad, bleached sand for everything else */
+  --rating-good: #10806a;
+  --rating-neutral: #f2ead6;
+  --rating-bad: #b3321f;
 
   --font-inscription: 'Marcellus', 'Trajan Pro', Georgia, serif;
   --font-text: 'Alegreya Sans', 'Gill Sans', 'Segoe UI', sans-serif;
@@ -70,25 +76,48 @@ body {
 
 /* ------------------------------------------------------------ layout */
 
+/* Wide screens: the board on the left, title and panel on the right, all within one screen height.
+   The move list takes the height that is left and scrolls, so nothing is pushed below the screen. */
 .table {
+  --gutter: clamp(1rem, 4vh, 3.5rem);
+
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 23rem);
-  gap: clamp(1.5rem, 4vw, 4.5rem);
-  /* Anchored at the top, so the board stays put when the panel grows */
-  align-items: start;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'board masthead'
+    'board panel';
+  column-gap: clamp(1.5rem, 4vw, 4.5rem);
   max-width: 78rem;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 34rem;
   margin: 0 auto;
-  padding: clamp(1rem, 4vh, 3.5rem) clamp(1rem, 3vw, 3rem);
+  padding: var(--gutter) clamp(1rem, 3vw, 3rem);
+}
+
+.masthead {
+  grid-area: masthead;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
 }
 
 .slab-frame {
+  grid-area: board;
   display: flex;
   justify-content: center;
+  /* Anchored at the top, so the board stays put when the panel changes */
+  align-self: start;
 }
 
 .slab {
   display: block;
-  width: min(100%, calc(100vh - 4rem));
+  width: min(100%, calc(100vh - 2 * var(--gutter)));
+  width: min(100%, calc(100dvh - 2 * var(--gutter)));
   height: auto;
   aspect-ratio: 1;
   overflow: visible;
@@ -97,23 +126,53 @@ body {
 }
 
 .panel {
+  grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   max-width: 34rem;
 }
 
+/* Narrow screens: title above the board, the panel below it, and the page scrolls */
 @media (max-width: 56rem) {
   .table {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      'masthead'
+      'board'
+      'panel';
+    height: auto;
+    min-height: 0;
+    padding-top: 0.75rem;
+  }
+
+  .masthead {
+    margin-bottom: 0.75rem;
+  }
+
+  .masthead .title {
+    font-size: 2.5rem;
   }
 
   .slab {
     width: min(100%, 36rem);
+  }
+
+  .panel {
+    display: block;
+    margin-top: 1.75rem;
+  }
+
+  .moves {
+    max-height: 11.5rem;
   }
 }
 
 /* ------------------------------------------------------------ type */
 
 .title {
-  margin: 0 0 1.25rem;
+  margin: 0;
   font-family: var(--font-inscription);
   font-weight: 400;
   font-size: clamp(3rem, 6vw, 4.5rem);
@@ -125,6 +184,11 @@ body {
 .turn {
   min-height: 6.5rem;
   margin-bottom: 1.75rem;
+}
+
+.play-again {
+  align-self: start;
+  margin: -0.75rem 0 1.75rem;
 }
 
 .status {
@@ -152,7 +216,7 @@ body {
 
 .players {
   list-style: none;
-  margin: 0 0 2rem;
+  margin: 0 0 1.5rem;
   padding: 0;
 }
 
@@ -204,6 +268,15 @@ body {
   color: var(--lichen-dim);
 }
 
+.player-level {
+  padding: 0 0.45rem;
+  border: 1px solid rgb(228 230 216 / 0.25);
+  border-radius: 1rem;
+  color: var(--lichen-dim);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
 .pebbles {
   display: flex;
   flex-wrap: wrap;
@@ -242,7 +315,10 @@ body.thinking .player.active .token {
 /* ------------------------------------------------------------ moves */
 
 .log {
-  margin-bottom: 1.75rem;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .log-title {
@@ -253,8 +329,10 @@ body.thinking .player.active .token {
   color: var(--sandstone-light);
 }
 
+/* As high as its moves, but never higher than the space left in the panel */
 .moves {
-  max-height: 11.5rem;
+  flex: 0 1 auto;
+  min-height: 0;
   overflow-y: auto;
   margin: 0;
   padding: 0 0 0 2.25rem;
@@ -289,48 +367,9 @@ body.thinking .player.active .token {
   color: var(--lichen-dim);
 }
 
-/* ------------------------------------------------------------ new game */
+/* ------------------------------------------------------------ buttons */
 
-.new-game summary {
-  cursor: pointer;
-  width: fit-content;
-  font-family: var(--font-inscription);
-  font-size: 1.3125rem;
-  color: var(--sandstone-light);
-}
-
-.new-game form {
-  padding-top: 0.75rem;
-}
-
-.new-game fieldset {
-  margin: 0 0 1rem;
-  padding: 0;
-  border: 0;
-}
-
-.new-game legend {
-  margin-bottom: 0.35rem;
-  color: var(--lichen-dim);
-}
-
-.new-game label {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0.15rem 0;
-  cursor: pointer;
-}
-
-.new-game input {
-  accent-color: var(--ochre);
-  width: 1.05rem;
-  height: 1.05rem;
-  margin: 0;
-}
-
-.new-game button {
-  margin-top: 0.25rem;
+.button {
   padding: 0.7rem 1.4rem;
   border: 0;
   border-radius: 0.35rem 0.6rem 0.45rem 0.55rem;
@@ -341,13 +380,352 @@ body.thinking .player.active .token {
   cursor: pointer;
 }
 
-.new-game button:hover {
+.button:hover {
   background: var(--sandstone-light);
 }
 
-.new-game button:active {
+.button:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 var(--groove);
+}
+
+.button.quiet {
+  padding: 0.55rem 1.1rem;
+  background: transparent;
+  color: var(--sandstone-light);
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1.5px rgb(200 174 132 / 0.6);
+}
+
+.button.quiet:hover {
+  background: rgb(200 174 132 / 0.12);
+}
+
+.button.quiet:active {
+  box-shadow: inset 0 0 0 1.5px rgb(200 174 132 / 0.6);
+}
+
+/* ------------------------------------------------------------ ratings */
+
+.assist {
+  margin-bottom: 1.5rem;
+}
+
+.switch {
+  display: inline-flex;
+  gap: 0.7rem;
+  align-items: center;
+  font-weight: 500;
+  font-size: 1.0625rem;
+  cursor: pointer;
+}
+
+/* The checkbox stays in place for screen readers and keyboards, the track is drawn over it */
+.switch input {
+  position: absolute;
+  z-index: 1;
+  width: 2.6rem;
+  height: 1.5rem;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  position: relative;
+  flex: none;
+  width: 2.6rem;
+  height: 1.5rem;
+  border-radius: 1rem;
+  background: var(--moss-dark);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(228 230 216 / 0.2);
+}
+
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.1rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fffdf8, #ece6da 55%, #bdb3a3);
+  box-shadow: 1px 2px 3px rgb(20 26 18 / 0.5);
+}
+
+.switch input:checked + .switch-track {
+  background: var(--groove);
+}
+
+.switch input:checked + .switch-track::after {
+  transform: translateX(1.1rem);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 3px solid var(--ochre);
+  outline-offset: 3px;
+}
+
+.rating-note {
+  margin: 0.3rem 0 0;
+  color: var(--lichen-dim);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend[hidden] {
+  display: none;
+}
+
+/* Each swatch is a chip of the slab with the mark on it, so the colours look as they do on the board */
+.legend li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.legend li::before {
+  content: '';
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--swatch) 0 34%, var(--sandstone) 38%);
+  box-shadow: 0 0 0 1px #a88f66;
+}
+
+.legend .good {
+  --swatch: var(--rating-good);
+}
+
+.legend .neutral {
+  --swatch: var(--rating-neutral);
+}
+
+.legend .neutral::before {
+  background: radial-gradient(circle, var(--swatch) 0 27%, var(--groove) 29% 35%, var(--sandstone) 37%);
+}
+
+.legend .bad {
+  --swatch: var(--rating-bad);
+}
+
+/* ------------------------------------------------------------ new game */
+
+.new-game {
+  width: min(27rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 0;
+  border-radius: 0.9rem;
+  background: var(--panel);
+  color: var(--lichen);
+  box-shadow: 0 0 0 1px rgb(228 230 216 / 0.12), 0 24px 60px rgb(10 14 9 / 0.6);
+}
+
+.new-game::backdrop {
+  background: rgb(22 28 20 / 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.new-game form {
+  padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.dialog-title {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-inscription);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--sandstone-light);
+}
+
+.colors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.colors legend,
+.level-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  color: var(--lichen-dim);
+}
+
+.color {
+  position: relative;
+  display: flex;
+  cursor: pointer;
+}
+
+/* The radio button lies invisibly over its tile, so a click anywhere on the tile chooses it */
+.color input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.color-face {
+  display: flex;
+  flex: 1;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.6rem;
+  background: rgb(0 0 0 / 0.14);
+  box-shadow: inset 0 0 0 1.5px rgb(228 230 216 / 0.14);
+  line-height: 1.25;
+}
+
+.color .token {
+  flex: none;
+}
+
+.color input:checked + .color-face {
+  background: rgb(224 169 59 / 0.1);
+  box-shadow: inset 0 0 0 2px var(--ochre);
+}
+
+.color input:focus-visible + .color-face {
+  outline: 3px solid var(--ochre);
+  outline-offset: 3px;
+}
+
+.level {
+  --thumb: 1.6rem;
+
+  margin-bottom: 1.75rem;
+}
+
+.level-name {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-inscription);
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--sandstone-light);
+}
+
+/* The slider is a groove in the stone, its thumb a pebble of marble */
+.level input {
+  display: block;
+  width: 100%;
+  height: var(--thumb);
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.level input::-webkit-slider-runnable-track {
+  height: 0.4rem;
+  border-radius: 0.2rem;
+  background: var(--groove);
+  box-shadow: 0 1px 0 rgb(240 226 194 / 0.35);
+}
+
+.level input::-moz-range-track {
+  height: 0.4rem;
+  border-radius: 0.2rem;
+  background: var(--groove);
+  box-shadow: 0 1px 0 rgb(240 226 194 / 0.35);
+}
+
+.level input::-webkit-slider-thumb {
+  width: var(--thumb);
+  height: calc(var(--thumb) * 0.92);
+  margin-top: calc(0.2rem - var(--thumb) * 0.46);
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fffdf8, #ece6da 55%, #bdb3a3);
+  box-shadow: 1px 3px 4px rgb(20 26 18 / 0.55);
+  appearance: none;
+}
+
+.level input::-moz-range-thumb {
+  width: var(--thumb);
+  height: calc(var(--thumb) * 0.92);
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #fffdf8, #ece6da 55%, #bdb3a3);
+  box-shadow: 1px 3px 4px rgb(20 26 18 / 0.55);
+}
+
+.level input:focus-visible {
+  outline: none;
+}
+
+.level input:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid var(--ochre);
+  outline-offset: 2px;
+}
+
+.level input:focus-visible::-moz-range-thumb {
+  outline: 3px solid var(--ochre);
+  outline-offset: 2px;
+}
+
+/* One name under every stop of the slider: the stops are half a thumb away from the ends */
+.level-scale {
+  position: relative;
+  height: 1.3rem;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: var(--lichen-dim);
+}
+
+.level-scale li {
+  position: absolute;
+  top: 0;
+  left: calc(var(--thumb) / 2 + var(--stop) * (100% - var(--thumb)) / 4);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.level-scale li:first-child {
+  left: 0;
+  transform: none;
+}
+
+.level-scale li:last-child {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.level-scale li.current {
+  color: var(--ochre);
+}
+
+.level-note {
+  min-height: 2.9em;
+  margin: 0.6rem 0 0;
+  color: var(--lichen-dim);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
 :focus-visible {
@@ -470,12 +848,14 @@ body.thinking .player.active .token {
 
 .spot-ring {
   fill: none;
-  stroke: var(--ochre);
+  stroke: var(--mark, var(--ochre));
   stroke-width: 4;
 }
 
 .spot-dot {
-  fill: var(--ochre);
+  fill: var(--mark, var(--ochre));
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .spot.movable .spot-ring {
@@ -513,6 +893,55 @@ body.thinking .player.active .token {
 
 .spot[aria-disabled='false']:hover .spot-ring {
   opacity: 0.8;
+}
+
+/* Rated moves: the colour tells how good the move is, the size helps where colours are hard to tell apart */
+
+.spot.rated-good {
+  --mark: var(--rating-good);
+}
+
+.spot.rated-neutral {
+  --mark: var(--rating-neutral);
+}
+
+.spot.rated-bad {
+  --mark: var(--rating-bad);
+}
+
+.spot.target.rated-good .spot-dot {
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+.spot.target.rated-good .spot-ring {
+  opacity: 0.75;
+  stroke-width: 3;
+}
+
+.spot.target.rated-neutral .spot-dot {
+  opacity: 1;
+  stroke: var(--groove);
+  stroke-width: 2;
+  transform: scale(0.8);
+}
+
+.spot.target.rated-bad .spot-dot {
+  opacity: 1;
+}
+
+.spot.movable[class*='rated-'] .spot-ring {
+  opacity: 1;
+  stroke-width: 3.5;
+}
+
+.spot.movable.rated-good .spot-ring {
+  stroke-width: 5;
+}
+
+.spot.movable.rated-neutral .spot-ring {
+  opacity: 0.85;
+  stroke-width: 2.5;
 }
 
 .spot:focus-visible .spot-ring {

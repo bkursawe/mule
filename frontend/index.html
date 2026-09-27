@@ -14,48 +14,79 @@
 </head>
 <body>
 <main class="table">
+  <header class="masthead">
+    <h1 class="title">Mühle</h1>
+    <button type="button" id="new-game-open" class="button quiet" aria-haspopup="dialog">Neues Spiel</button>
+  </header>
+
   <div class="slab-frame">
     <svg id="board" class="slab" viewBox="0 0 800 800" role="group" aria-label="Spielbrett"></svg>
   </div>
 
   <aside class="panel">
-    <h1 class="title">Mühle</h1>
-
     <div class="turn" role="status">
       <p id="status" class="status">Das Spiel wird geladen.</p>
       <p id="detail" class="detail"></p>
     </div>
+    <button type="button" id="play-again" class="button play-again" aria-haspopup="dialog" hidden>Noch eine Partie</button>
 
     <ul class="players" aria-label="Steine der Spieler">
       <li class="player" id="player-human"></li>
       <li class="player" id="player-computer"></li>
     </ul>
 
+    <div class="assist">
+      <label class="switch">
+        <input type="checkbox" id="rate-moves" role="switch" aria-describedby="rating-note">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Züge bewerten</span>
+      </label>
+      <p id="rating-note" class="rating-note">Zeigt vor deinem Zug, welche Züge gut und welche schlecht sind.</p>
+      <ul id="rating-legend" class="legend" aria-label="Farben der Bewertung" hidden>
+        <li class="good">sehr gut</li>
+        <li class="neutral">neutral</li>
+        <li class="bad">schlecht</li>
+      </ul>
+    </div>
+
     <section class="log" aria-labelledby="log-title">
       <h2 id="log-title" class="log-title">Züge</h2>
       <ol id="moves" class="moves"></ol>
       <p id="no-moves" class="log-empty">Noch kein Zug gespielt.</p>
     </section>
-
-    <details id="new-game" class="new-game">
-      <summary>Neues Spiel</summary>
-      <form id="new-game-form">
-        <fieldset>
-          <legend>Du spielst</legend>
-          <label><input type="radio" name="humanColor" value="WHITE" checked> Weiß, du beginnst</label>
-          <label><input type="radio" name="humanColor" value="BLACK"> Schwarz</label>
-        </fieldset>
-        <fieldset>
-          <legend>Der Computer spielt</legend>
-          <label><input type="radio" name="strength" value="EASY"> locker</label>
-          <label><input type="radio" name="strength" value="MEDIUM" checked> gut, denkt 1 Sekunde</label>
-          <label><input type="radio" name="strength" value="HARD"> stark, denkt 3 Sekunden</label>
-        </fieldset>
-        <button type="submit">Neues Spiel beginnen</button>
-      </form>
-    </details>
   </aside>
 </main>
+
+<dialog id="new-game" class="new-game" aria-labelledby="new-game-title">
+  <form id="new-game-form" method="dialog">
+    <h2 id="new-game-title" class="dialog-title">Neues Spiel</h2>
+
+    <fieldset class="colors">
+      <legend>Du spielst</legend>
+      <label class="color">
+        <input type="radio" name="humanColor" value="WHITE" checked>
+        <span class="color-face"><span class="token white" aria-hidden="true"></span>Weiß, du beginnst</span>
+      </label>
+      <label class="color">
+        <input type="radio" name="humanColor" value="BLACK">
+        <span class="color-face"><span class="token black" aria-hidden="true"></span>Schwarz</span>
+      </label>
+    </fieldset>
+
+    <div class="level">
+      <label for="level" class="level-label">Stärke des Computers</label>
+      <p class="level-name" id="level-name" aria-hidden="true"></p>
+      <input type="range" id="level" name="level" min="1" max="5" step="1" value="2" aria-describedby="level-note">
+      <ol class="level-scale" aria-hidden="true"></ol>
+      <p class="level-note" id="level-note"></p>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="new-game-cancel" class="button quiet">Abbrechen</button>
+      <button type="submit" class="button">Neues Spiel beginnen</button>
+    </div>
+  </form>
+</dialog>
 <noscript><p class="noscript">Zum Spielen braucht diese Seite JavaScript.</p></noscript>
 </body>
 </html>

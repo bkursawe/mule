@@ -76,12 +76,15 @@ Abhängigkeiten nur von oben nach unten:
    - Web: `frontend/js/app.js` (Spielablauf, Texte), `board.js` (SVG-Steinplatte, Animationen), `api.js`.
    - Server: `Server.kt` (Routen, Fehler → 400/404/409), `GameService` (Spiele im Speicher, je Spiel ein Mutex,
      inaktive Spiele fliegen nach 6 h raus), `Dtos.kt` (JSON-Format). API: `POST /api/games`,
-     `GET /api/games/{id}`, `POST /api/games/{id}/moves`, `POST /api/games/{id}/computer-move`.
+     `GET /api/games/{id}`, `POST /api/games/{id}/moves`, `POST /api/games/{id}/computer-move`,
+     `GET /api/games/{id}/ratings` (Bewertung der Züge des Menschen, je Stellung einmal berechnet, eigener Mutex).
+     `Strength` legt die fünf Stufen fest: `BEGINNER` und `EASY` schauen nur auf die Stellung nach ihrem eigenen Zug
+     (`BEGINNER` übersieht dabei die Mühlen des Menschen), `MEDIUM` rechnet 2 Halbzüge, `HARD` 1 s, `MASTER` 3 s.
      `TestApi.kt`: `POST /api/test/games` legt ein Spiel in beliebiger Stellung an, nur mit `MULE_TEST_API=true`.
      Sie ist für die E2E-Tests gedacht und darf auf keinem Server für echte Spieler aktiv sein.
      `GET /health` antwortet mit `OK`, für den Healthcheck des Containers. Logs gehen per `logback.xml` auf INFO nach stdout.
    - Konsole: `Game` (Spielschleife), `ConsoleUi` (Ausgabe, `ConsolePlayer`).
-2. **KI**: `EvaluationStrategy` bewertet eine `Position` (positiv = Vorteil Weiß). Standard ist `ExtendedEvaluationStrategy`: Steine inkl. Hand, Mühlen, im nächsten Zug schließbare Mühlen, Beweglichkeit und Feldgewichte. `SimpleEvaluationStrategy` bleibt als Vergleich. Gewichte nur nach Testpartien gegen die bisherige Bewertung ändern. `ChoosingStrategy` wählt einen Zug: `SimpleChoosingStrategy` oder `AlphaBetaStrategy(depth, evaluation, timeLimit)`. Letztere ist Negamax mit iterativer Vertiefung, `TranspositionTable` und Zugsortierung (Tabellenzug, Schlagzüge, Killerzüge). Ein Sieg zählt `WIN` minus Halbzüge bis dahin. Jede Strategie bekommt ihre Bewertung im Konstruktor.
+2. **KI**: `EvaluationStrategy` bewertet eine `Position` (positiv = Vorteil Weiß). Standard ist `ExtendedEvaluationStrategy`: Steine inkl. Hand, Mühlen, im nächsten Zug schließbare Mühlen, Beweglichkeit und Feldgewichte. `SimpleEvaluationStrategy` bleibt als Vergleich. Gewichte nur nach Testpartien gegen die bisherige Bewertung ändern. `ChoosingStrategy` wählt einen Zug: `SimpleChoosingStrategy`, `AlphaBetaStrategy(depth, evaluation, timeLimit)` oder `WeightedRandomStrategy`. `AlphaBetaStrategy` ist Negamax mit iterativer Vertiefung, `TranspositionTable` und Zugsortierung (Tabellenzug, Schlagzüge, Killerzüge). Ein Sieg zählt `WIN` minus Halbzüge bis dahin. `scoreMoves` bewertet jeden legalen Zug mit vollem Fenster, je fertiger Tiefe. `WeightedRandomStrategy` spielt schwächer: Sie zieht zufällig, gewichtet mit `exp((Wert − bester Wert) / temperature)`. Mit `ExtendedEvaluationStrategy(overlooked = …)` zählen von einer Farbe nur die Steine. `MoveRater` stuft die Züge als `GOOD`, `NEUTRAL` oder `BAD` ein: Er mittelt die beiden tiefsten Suchen gegen den Horizonteffekt und vergleicht mit dem besten Zug und dem Median. Jede Strategie bekommt ihre Bewertung im Konstruktor. Neue Stufen nur nach Testpartien gegen die Nachbarstufen einführen; die Stufen müssen der Reihe nach stärker werden.
 3. **Regeln**: `Rules` erzeugt die legalen Züge und wendet sie an. `GameState` = `Position` + Historie: `play(move)` prüft die Legalität und wechselt den Spieler, `result` liefert `GameResult` (`Ongoing`, `Remis`, `Win`). Remis bei dreifacher Wiederholung oder nach 20 Zügen je Spieler (40 Halbzügen) ohne Mühle wie in der Turnierregel; gezählt wird erst ab der Zugphase, jeder Setzzug und jedes Schlagen setzt den Zähler zurück.
 4. **Modell** (unveränderlich):
    - `Board`: nur die Steine, als 24-Bit-Maske pro Farbe (Bit i = Feld i); `MULES`, `CONNECTIONS`, `NEIGHBORS`, `WEIGHTED_POSITIONS` im Companion.
@@ -96,8 +99,12 @@ Abhängigkeiten nur von oben nach unten:
 - Tests: Namen in Backticks, `assertThat`/`assertThatThrownBy` von AssertJ, `@ParameterizedTest` mit `@CsvSource`, `@Nested`. Testzustände mit `createState(...)` aus `TestStates.kt` bauen, damit sie regelkonform sind.
 - `PerftTest` sichert die Zuggenerierung ab: Ändern sich die Zahlen, ist die Zuggenerierung falsch, nicht der Test.
 - Frontend-Design: Sandsteinplatte auf Moos, Kiesel aus Marmor und Basalt, Ocker nur für das, was eine
-  Entscheidung verlangt (Ziele, Auswahl, Mühle). Farben als CSS-Variablen in `styles.css`. Bewegung nur als
-  Antwort auf Züge; `prefers-reduced-motion` wird respektiert.
+  Entscheidung verlangt (Ziele, Auswahl, Mühle). Die Bewertung der Züge färbt Punkte in Grünspan (sehr gut),
+  gebleichtem Sand (neutral) und Ziegelrot (schlecht); die Größe der Markierung trägt dieselbe Information.
+  Farben als CSS-Variablen in `styles.css`. Bewegung nur als Antwort auf Züge; `prefers-reduced-motion` wird
+  respektiert.
+- Layout: Auf breiten Bildschirmen ist die Seite genau fensterhoch, nur die Zugliste scrollt; auf schmalen steht der
+  Titel über dem Brett. Einstellungen für ein neues Spiel stehen im Dialog `#new-game`, nicht in der Seitenleiste.
 - E2E-Tests: Selektoren wie ein Nutzer (`getByRole`, zugängliche Namen wie „d6, frei“), keine festen Wartezeiten,
   Stellungen über die Test-API, Fehler über `page.route`. Bekannte Fehler bleiben mit `test.fail` rot markiert und
   stehen in `e2e/FINDINGS.md`. Texte in `app.js` ändern heißt E2E-Tests nachziehen.

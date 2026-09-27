@@ -13,6 +13,7 @@ import de.praxisit.mule.Move
 import de.praxisit.mule.Phase
 import de.praxisit.mule.Player
 import de.praxisit.mule.PushMove
+import de.praxisit.mule.Rating
 import de.praxisit.mule.SetMove
 import de.praxisit.mule.White
 import kotlinx.serialization.Serializable
@@ -30,7 +31,7 @@ enum class ResultStatus { ONGOING, WIN, REMIS }
 enum class ResultReason { TWO_STONES, BLOCKED, REPETITION, NO_CAPTURE }
 
 @Serializable
-data class NewGameRequest(val humanColor: ColorDto = ColorDto.WHITE, val strength: Strength = Strength.MEDIUM)
+data class NewGameRequest(val humanColor: ColorDto = ColorDto.WHITE, val strength: Strength = Strength.EASY)
 
 /** A move; the fields are numbered 0 to 23 like the board of the engine. */
 @Serializable
@@ -70,6 +71,13 @@ data class GameDto(
     val movesWithoutCapture: Int,
     val result: ResultDto
 )
+
+@Serializable
+data class RatedMoveDto(val move: MoveDto, val rating: Rating)
+
+/** The ratings of the legal moves of the human, after [moveNumber] moves of the game. */
+@Serializable
+data class RatingsDto(val moveNumber: Int, val moves: List<RatedMoveDto>)
 
 fun Color.toDto() = if (this == White) ColorDto.WHITE else ColorDto.BLACK
 
@@ -133,3 +141,6 @@ private fun GameState.resultDto() = when (val result = result) {
         ResultDto(ResultStatus.WIN, result.winner.toDto(), reason)
     }
 }
+
+fun Map<Move, Rating>.toDto(moveNumber: Int) =
+    RatingsDto(moveNumber, map { (move, rating) -> RatedMoveDto(move.toDto(), rating) })

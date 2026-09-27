@@ -63,6 +63,15 @@ class ExtendedEvaluationStrategyTest {
         assertThat(mobilityOnly.evaluate(moving.position) - weights(moving)).isEqualTo(10.0)
     }
 
+    @Test
+    fun `of the overlooked color only the stones count`() {
+        // Black has a mule, can close another one on 11 and stands on good fields; White has only stones in hand
+        val state = createState(listOf(), 9, listOf(0, 1, 2, 9, 10), 4, White)
+
+        assertThat(ExtendedEvaluationStrategy(overlooked = Black).evaluate(state.position)).isEqualTo(0.0)
+        assertThat(ExtendedEvaluationStrategy().evaluate(state.position)).isNegative()
+    }
+
     private fun closableMuleValue(state: GameState) =
         ExtendedEvaluationStrategy(0.0, 0.0, 20.0, 0.0).evaluate(state.position) - weights(state)
 

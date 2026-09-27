@@ -11,8 +11,12 @@ Routen: `POST /api/games`, `GET /api/games/{id}`, `POST /api/games/{id}/moves`,
 **Eingaben.**
 - Brett: 24 Punkte (`role="button"`, Name „d6, frei“), per Maus, Touch, Tab und Enter/Leertaste.
   Esc nimmt Auswahl und Mühlenzug zurück.
-- Formular „Neues Spiel“: Farbe (Weiß/Schwarz), Stärke (locker/mittel/stark).
-- Gespeichert werden `mule.game` (Spiel-ID) und `mule.settings` im `localStorage`.
+- Dialog „Neues Spiel“ (Knopf im Kopf der Seite, am Spielende „Noch eine Partie“): Farbe (Weiß/Schwarz) und
+  Stärke als Schieberegler mit fünf Stufen (Anfänger, Leicht, Mittel, Stark, Meister). Schließt mit Abbrechen, Esc
+  oder einem Klick daneben.
+- Schalter „Züge bewerten“: Vor dem Zug des Menschen fragt die Seite `GET /api/games/{id}/ratings` und färbt die
+  Punkte (sehr gut, neutral, schlecht); der zugängliche Name bekommt „, sehr gut“ oder „, schlecht“ angehängt.
+- Gespeichert werden `mule.game` (Spiel-ID), `mule.settings` und `mule.ratings` im `localStorage`.
 
 **Zustände der Oberfläche** (`texts()` in `app.js`):
 - Laden, Setzen, Ziehen, Stein ausgewählt, Springen, Sprungziel wählen.
@@ -60,17 +64,25 @@ Legende: ✅ abgedeckt · ➖ bewusst ausgelassen · ⏳ offen
 | Schlagen: alle Steine in Mühlen | ✅ | `spiel.spec.ts` › der Mensch gewinnt … |
 | Esc bricht Mühlenzug ab | ✅ | |
 | Eingabe während eigenem Request / Computerzug / nach Spielende | ✅ | Requests werden gezielt angehalten, kein Warten auf Zeit |
+| Neues Spiel, während der Computer rechnet oder das gespeicherte Spiel lädt | ✅ | F-04: die späte Antwort wird verworfen |
 | Server 500, Abbruch, 404, kaputtes JSON, JSON ohne Spiel | ✅ | die beiden letzten waren F-01, behoben |
 | 409 durch veralteten zweiten Tab | ✅ | |
 | Neuladen: Spiel bleibt, offene Schlag-Auswahl verworfen | ✅ | |
 | Unbekannte gespeicherte ID, gesperrter `localStorage` | ✅ | |
-| Formular: als Schwarz, Stärke locker | ✅ | |
+| Dialog: als Schwarz, Stufe Anfänger; Stufe wird gemerkt | ✅ | `spiel.spec.ts` › Neues Spiel |
+| Dialog: alles im sichtbaren Bereich (1280 × 720 und Pixel 7) | ✅ | war der Anlass für den Dialog |
+| Dialog: Abbrechen, Esc, Klick daneben, Pfeiltasten am Regler | ✅ | Esc lässt eine Auswahl auf dem Brett stehen |
+| Gespeicherte Einstellungen einer älteren Version | ✅ | unbekannte Farbe und Stärke fallen auf die Vorgabe zurück |
+| Bewertung: Blocken, Ziehen, Schlagen | ✅ | Stellungen mit eindeutig bestem Zug, damit die Zeitgrenze der Suche nichts ändert |
+| Bewertung: lädt, fällt aus, bleibt nach Neuladen an | ✅ | während sie lädt, nimmt das Brett Züge an |
+| Seite passt bei 1280 × 720 ohne Scrollen, auch mit langer Zugliste | ✅ | Zugliste per `page.route` verlängert |
+| Titel über dem Brett auf schmalen Bildschirmen | ✅ | |
 | Tastaturbedienung (Tab, Enter) | ✅ | Pfeiltasten gibt es nicht, Tab-Reihenfolge nur für den ersten Punkt |
 | Singular „1 Stein“ | ✅ | |
 | 375 px Breite, Pixel 7 (Touch) | ✅ | Hauptabläufe laufen zusätzlich im Projekt `mobile` |
 | `prefers-reduced-motion` | ✅ | |
 | Barrierefreiheit (axe, schwer/kritisch) | ✅ | Start und Schlag-Auswahl |
-| Stärke mittel/stark | ➖ | Rechenzeit 1–3 s je Zug, Stärke ist Sache der Engine-Tests |
+| Stufen Leicht, Stark, Meister | ➖ | Rechenzeit 1–3 s bzw. Zufall; die Stufen prüfen `GameApiTest` und die Engine-Tests |
 | Firefox, WebKit | ➖ | CI installiert nur Chromium; Oberfläche nutzt nur Standard-APIs (SVG, WAAPI, fetch) |
 | Lange Partie bis zum Zugzähler-Überlauf der Zugliste | ⏳ | Scrollen der Zugliste ist ungetestet |
 | Spiel läuft nach 6 h Inaktivität ab | ➖ | Verhalten ist dasselbe wie bei unbekannter ID (404), das ist abgedeckt |

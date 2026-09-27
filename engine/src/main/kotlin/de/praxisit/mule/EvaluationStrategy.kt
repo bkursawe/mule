@@ -27,18 +27,23 @@ class SimpleEvaluationStrategy : EvaluationStrategy {
  * Evaluates for both players their stones (on the board and in hand), their mules, the mules they can close
  * with their next move, their mobility in the moving phase and the connections of their fields.
  * The default weights won most games against [SimpleEvaluationStrategy] in engine matches.
+ *
+ * Of the [overlooked] color only the stones count, like a beginner sees them who looks at the own chances
+ * and not at the threats of the opponent.
  */
 class ExtendedEvaluationStrategy(
     private val stoneWeight: Double = 100.0,
     private val muleWeight: Double = 10.0,
     private val closableMuleWeight: Double = 40.0,
-    private val mobilityWeight: Double = 5.0
+    private val mobilityWeight: Double = 5.0,
+    private val overlooked: Color? = null
 ) : EvaluationStrategy {
     override fun evaluate(position: Position) = score(position, White) - score(position, Black)
 
     private fun score(position: Position, color: Color): Double {
         val board = position.board
         val player = position.player(color)
+        if (color == overlooked) return stoneWeight * player.stones
         val mobility = if (player.phase == MOVING) mobility(board, color) else 0
         return stoneWeight * player.stones +
             muleWeight * board.muleCount(color) +

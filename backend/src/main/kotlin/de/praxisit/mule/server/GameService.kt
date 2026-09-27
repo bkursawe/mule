@@ -3,9 +3,12 @@ package de.praxisit.mule.server
 import de.praxisit.mule.AlphaBetaStrategy
 import de.praxisit.mule.ChoosingStrategy
 import de.praxisit.mule.Color
+import de.praxisit.mule.ExtendedEvaluationStrategy
 import de.praxisit.mule.GameResult.Ongoing
 import de.praxisit.mule.GameState
 import de.praxisit.mule.Move
+import de.praxisit.mule.MoveRater
+import de.praxisit.mule.WeightedRandomStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -17,10 +20,24 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 
-enum class Strength(val createComputer: () -> ChoosingStrategy) {
-    EASY({ AlphaBetaStrategy(depth = 2) }),
-    MEDIUM({ AlphaBetaStrategy(depth = 20, timeLimit = 1.seconds) }),
-    HARD({ AlphaBetaStrategy(depth = 30, timeLimit = 3.seconds) })
+// Moves this many points worse than the best one are e times less likely, so the weak levels vary their games
+private const val VARIETY = 10.0
+
+/**
+ * The levels of the computer, weakest first. The two weakest look only at the position after their own move,
+ * so a beginner can win against them.
+ */
+enum class Strength(val createComputer: (computerColor: Color) -> ChoosingStrategy) {
+    // Closes every mule it sees, but overlooks the ones of the human
+    BEGINNER({ color -> WeightedRandomStrategy(1, VARIETY, ExtendedEvaluationStrategy(overlooked = color.opposite)) }),
+
+    // Sees the open mules of the human, but not what they cost, so it often builds its own instead of blocking
+    EASY({ WeightedRandomStrategy(1, VARIETY) }),
+
+    // Also sees the answer of the human
+    MEDIUM({ WeightedRandomStrategy(2, 3.0) }),
+    HARD({ AlphaBetaStrategy(depth = 20, timeLimit = 1.seconds) }),
+    MASTER({ AlphaBetaStrategy(depth = 30, timeLimit = 3.seconds) })
 }
 
 class GameNotFoundException(id: String) : RuntimeException("No game with id $id")
@@ -35,10 +52,15 @@ class GameSession(
     now: Instant,
     initialState: GameState = GameState()
 ) {
-    private val computer = strength.createComputer()
+    private val computer = strength.createComputer(humanColor.opposite)
     private val mutex = Mutex()
     private val moves = mutableListOf<Move>()
     private var state = initialState
+
+    // The ratings have a lock of their own, so the human can move while they are computed
+    private val rater by lazy { MoveRater() }
+    private val ratingMutex = Mutex()
+    private var ratings: RatingsDto? = null
 
     @Volatile
     var lastAccess: Instant = now
@@ -63,6 +85,20 @@ class GameSession(
         // The search takes up to a few seconds, so it must not block the server threads
         val move = withContext(Dispatchers.Default) { computer.chooseMove(state) }
         play(move)
+    }
+
+    /** Rates the legal moves of the human; the ratings of a position are computed only once. */
+    suspend fun rateMoves(now: Instant): RatingsDto {
+        val (current, moveNumber) = mutex.withLock {
+            lastAccess = now
+            check(state.result == Ongoing) { "The game is over" }
+            check(state.activeColor == humanColor) { "It is the computer's turn" }
+            state to moves.size
+        }
+        return ratingMutex.withLock {
+            ratings?.takeIf { it.moveNumber == moveNumber }
+                ?: withContext(Dispatchers.Default) { rater.rate(current).toDto(moveNumber) }.also { ratings = it }
+        }
     }
 
     private fun play(move: Move): GameDto {
@@ -95,6 +131,8 @@ class GameService(
     suspend fun playHumanMove(id: String, move: Move) = session(id).playHumanMove(move, clock.instant())
 
     suspend fun playComputerMove(id: String) = session(id).playComputerMove(clock.instant())
+
+    suspend fun rateMoves(id: String) = session(id).rateMoves(clock.instant())
 
     private fun session(id: String) = sessions[id] ?: throw GameNotFoundException(id)
 
