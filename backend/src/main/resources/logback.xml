@@ -2,7 +2,10 @@
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+            <!-- The server listens on all interfaces, so Ktor logs "Responding at http://0.0.0.0:8080" on start.
+                 That is no address to open: Windows cannot connect to 0.0.0.0 and Safari blocks it.
+                 The log names localhost instead; the bind address stays as it is, a container needs it. -->
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %replace(%msg){'://0\.0\.0\.0:', '://localhost:'}%n</pattern>
         </encoder>
     </appender>
 
