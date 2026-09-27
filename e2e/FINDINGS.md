@@ -10,17 +10,19 @@ Die Hauptabläufe halten: Setzen, Ziehen, Springen, Schlagen, alle Spielenden mi
 Tastaturbedienung. Doppelte und verspätete Eingaben lösen keinen zweiten Zug aus; Serverfehler, Abbrüche, 404 und
 409 führen zu einer verständlichen Meldung, ohne dass das Brett einen falschen Stand zeigt. Die einzige echte Schwäche
 im Code war eine Serverantwort mit Status 200, aber ohne gültiges JSON: Dann fror das Brett ein und behauptete
-weiter „Du bist am Zug“. Dazu kam eine Regelfrage zur 50-Züge-Regel. Beide Befunde sind behoben.
+weiter „Du bist am Zug“. Dazu kam eine Regelfrage zur 50-Züge-Regel. Beide Befunde sind behoben. Später kam F-03
+hinzu: Ein neues Spiel, während der Computer überlegte oder das gespeicherte Spiel noch lud, wurde von der verspäteten
+Antwort wieder verdrängt. Auch das ist behoben.
 
 | Schweregrad | Anzahl (davon behoben) |
 |---|---|
 | Blocker | 0 |
 | Hoch | 0 |
-| Mittel | 1 (1) |
+| Mittel | 2 (2) |
 | Niedrig | 1 (1) |
 | Kosmetisch | 0 |
 
-**Tests:** 47 insgesamt (34 Desktop, 13 Mobil) · 47 grün · 0 rot · 0 als bekannter Fehler markiert.
+**Tests:** 49 insgesamt (36 Desktop, 13 Mobil) · 49 grün · 0 rot · 0 als bekannter Fehler markiert.
 Stabil in fünf Wiederholungen je Test (`--repeat-each=5`).
 
 ---
@@ -73,6 +75,40 @@ Das Verhalten entspricht `CLAUDE.md` und wird von „nach 50 Zügen ohne Schlage
 **Behoben:** Entschieden für die Turnierregel. Remis nach 40 Halbzügen ohne Mühle; Setzzüge zählen nicht und setzen
 den Zähler zurück. Neuer Text: „Ihr habt beide 20 Züge lang keine Mühle geschlossen.“ Geprüft von `GameStateTest`
 und „nach 20 Zügen je Seite ohne Mühle ist das Spiel unentschieden“.
+
+---
+
+### F-03 · Eine verspätete Antwort verdrängt ein neues Spiel · **Mittel** · behoben
+
+- **Kategorie:** Nebenläufigkeit / Eingaben zur falschen Zeit
+- **Art:** Fehler in der App
+- **Betrifft:** Formular „Neues Spiel“, während ein Zug, der Computerzug oder das gespeicherte Spiel unterwegs ist
+
+**Reproduktion**
+
+1. Spiel öffnen, einen Stein setzen.
+2. Während der Computer überlegt (bei „gut“ und „stark“ 1–3 s), „Neues Spiel“ öffnen und „Neues Spiel beginnen“
+   drücken.
+3. Warten, bis der Computer geantwortet hat.
+
+Automatisiert in `e2e/tests/spiel.edge.spec.ts` → „ein neues Spiel, während der Computer überlegt, bleibt, wenn seine
+Antwort kommt“, dazu derselbe Fall beim Neuladen: „ein neues Spiel, während das gespeicherte noch lädt, bleibt, wenn
+es ankommt“
+
+**Erwartet:** Das neue Spiel bleibt: leeres Brett, „Noch kein Zug gespielt.“, auch nach dem Neuladen.
+**Tatsächlich:** Das neue Spiel erscheint kurz, dann zeigt die Seite wieder das alte mit dem Zug des Computers und
+speichert dessen ID in `mule.game`. Auch nach dem Neuladen ist das alte Spiel da.
+
+**Ursache:** `computerTurn()` und `playHumanMove()` weisen die Antwort ungeprüft `game` zu (`app.js:49`, `app.js:60`).
+`startGame()` hat `game` da schon durch das neue Spiel ersetzt. War der Zug des Menschen die späte Antwort, startete
+danach sogar noch ein Computerzug. Genauso übernahm `init()` das gespeicherte Spiel, auch wenn inzwischen ein neues
+begonnen war.
+**Auswirkung:** Wer mitten in einer Partie neu beginnt, verliert sein neues Spiel, ohne einen Hinweis zu sehen.
+**Behoben:** `run()` merkt sich die ID des gezeigten Spiels vor der Anfrage. Zeigt die Seite bei der Antwort ein
+anderes Spiel, verwirft sie Antwort und Fehler und gibt das Brett nicht frei, denn das gehört jetzt den Anfragen des
+neuen Spiels. `playHumanMove()` fragt den Computer nur, wenn der eigene Zug angekommen ist und nach der Pause noch
+dasselbe Spiel zu sehen ist. `init()` verwirft das gespeicherte Spiel samt Ladefehler, wenn inzwischen ein neues
+gezeigt wird oder unterwegs ist. Beide Tests waren vor der Änderung in fünf von fünf Läufen rot und sind danach grün.
 
 ---
 

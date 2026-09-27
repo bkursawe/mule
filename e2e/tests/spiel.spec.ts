@@ -15,7 +15,7 @@ test.describe('Spielbeginn', () => {
   test('als Schwarz eröffnet der Computer', async ({ mule }) => {
     await mule.openNewGame();
 
-    await mule.page.getByText('Neues Spiel', { exact: true }).click();
+    await mule.openNewGameDialog();
     await mule.page.getByRole('radio', { name: 'Schwarz' }).check();
     await mule.page.getByRole('radio', { name: 'locker' }).check();
     await mule.newGameButton.click();
@@ -167,7 +167,7 @@ test.describe('Spielende', () => {
     await mule.field('d6').click();
     await mule.expectHumanTurn();
 
-    await mule.page.getByText('Neues Spiel', { exact: true }).click();
+    await mule.openNewGameDialog();
     await mule.newGameButton.click();
 
     await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);

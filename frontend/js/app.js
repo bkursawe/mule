@@ -32,50 +32,65 @@ const view = new BoardView(dom.board, activate);
 // ---------------------------------------------------------------- game flow
 
 async function startGame(humanColor, strength) {
-  await run(async () => {
-    game = await api.startGame(humanColor, strength);
+  const started = await run(() => api.startGame(humanColor, strength), (answer) => {
+    game = answer;
     selected = null;
     pending = null;
     motion = null;
     dom.newGame.open = false;
   });
-  if (isComputerTurn()) await computerTurn();
+  if (started && isComputerTurn()) await computerTurn();
 }
 
 async function playHumanMove(move, alreadyShown = false) {
   selected = null;
   pending = null;
-  await run(async () => {
-    game = await api.playMove(game.id, move);
+  const id = game.id;
+  const played = await run(() => api.playMove(id, move), (answer) => {
+    game = answer;
     motion = { move, animateMove: !alreadyShown, glowMules: !alreadyShown };
   });
-  if (isComputerTurn()) {
-    await pause(COMPUTER_DELAY);
-    await computerTurn();
-  }
+  if (!played || !isComputerTurn()) return;
+  await pause(COMPUTER_DELAY);
+  // The human may have started a new game during the pause
+  if (game.id === id) await computerTurn();
 }
 
 async function computerTurn() {
-  await run(async () => {
-    game = await api.computerMove(game.id);
+  await run(() => api.computerMove(game.id), (answer) => {
+    game = answer;
     motion = { move: game.moves.at(-1), animateMove: true, glowMules: true };
   });
 }
 
-/** Runs a request: blocks the board meanwhile and shows errors as status. */
-async function run(action) {
+/**
+ * Sends a request about the game shown: blocks the board meanwhile, applies the answer and shows errors as status.
+ * If the human has started a new game by the time the answer comes, it belongs to the old game and is dropped,
+ * errors included. Returns whether the answer was applied.
+ */
+async function run(request, apply) {
+  const id = game?.id;
   busy = true;
   message = null;
   render();
+  let answer = null;
+  let failure = null;
   try {
-    await action();
-    save(GAME_KEY, game?.id);
+    answer = await request();
   } catch (error) {
-    message = errorTexts(error);
-  } finally {
-    busy = false;
-    render();
+    failure = error;
   }
+  // The board belongs to the new game now; its own requests block and release it
+  if (game?.id !== id) return false;
+  if (failure) {
+    message = errorTexts(failure);
+  } else {
+    apply(answer);
+    save(GAME_KEY, game.id);
+  }
+  busy = false;
+  render();
+  return !failure;
 }
 
 function pause(milliseconds) {
@@ -396,17 +411,24 @@ async function init() {
   }
 
   const savedId = load(GAME_KEY);
+  let saved = null;
+  let failure = null;
   if (savedId) {
     try {
-      game = await api.getGame(savedId);
+      saved = await api.getGame(savedId);
     } catch (error) {
-      if (!(error instanceof ApiError && error.status === 404)) {
-        message = errorTexts(error);
-        render();
-        return;
-      }
+      if (!(error instanceof ApiError && error.status === 404)) failure = error;
     }
   }
+  // The human has started a new game while the saved one was loading, and it is shown or still on its way.
+  // It counts, not the saved one. Before a game is shown, only that request can make the page busy.
+  if (game || busy) return;
+  if (failure) {
+    message = errorTexts(failure);
+    render();
+    return;
+  }
+  game = saved;
   if (game) {
     render();
     if (isComputerTurn()) await computerTurn();

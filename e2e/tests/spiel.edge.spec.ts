@@ -71,6 +71,50 @@ test.describe('Eingaben zur falschen Zeit', () => {
     expect(moves.count).toBe(1);
   });
 
+  // F-03: the late answer used to bring back the old game and store its ID
+  test('ein neues Spiel, während der Computer überlegt, bleibt, wenn seine Antwort kommt', async ({ mule }) => {
+    await mule.openNewGame();
+    const computer = await mule.holdRequests('**/computer-move');
+    await mule.field('d6').click();
+    await computer.arrived;
+    await expect(mule.status).toContainText('Der Computer überlegt');
+
+    await mule.openNewGameDialog();
+    await mule.newGameButton.click();
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+    const answer = mule.page.waitForResponse('**/computer-move');
+    computer.release();
+    await (await answer).finished();
+
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+    await expect(mule.page.getByText('Noch kein Zug gespielt.')).toBeVisible();
+    await expect(mule.status).toContainText('Du bist am Zug. Setze einen Stein');
+    await mule.page.reload();
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+  });
+
+  // F-03: the same with the saved game that loads after a reload
+  test('ein neues Spiel, während das gespeicherte noch lädt, bleibt, wenn es ankommt', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.field('d6').click();
+    await mule.expectHumanTurn();
+    const saved = await mule.holdRequests('**/api/games/*');
+    await mule.page.reload();
+    await saved.arrived;
+    await expect(mule.status).toContainText('Das Spiel wird geladen.');
+
+    await mule.openNewGameDialog();
+    await mule.newGameButton.click();
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+    const answer = mule.page.waitForResponse('**/api/games/*');
+    saved.release();
+    await (await answer).finished();
+
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+    await expect(mule.page.getByText('Noch kein Zug gespielt.')).toBeVisible();
+    await expect(mule.status).toContainText('Du bist am Zug. Setze einen Stein');
+  });
+
   test('nach Spielende sind alle Punkte gesperrt', async ({ mule }) => {
     // Black is to move and every black stone is surrounded
     await mule.openPosition({

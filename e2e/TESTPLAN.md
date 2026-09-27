@@ -60,6 +60,7 @@ Legende: ✅ abgedeckt · ➖ bewusst ausgelassen · ⏳ offen
 | Schlagen: alle Steine in Mühlen | ✅ | `spiel.spec.ts` › der Mensch gewinnt … |
 | Esc bricht Mühlenzug ab | ✅ | |
 | Eingabe während eigenem Request / Computerzug / nach Spielende | ✅ | Requests werden gezielt angehalten, kein Warten auf Zeit |
+| Neues Spiel, während der Computer überlegt oder das gespeicherte Spiel lädt | ✅ | war F-03, behoben |
 | Server 500, Abbruch, 404, kaputtes JSON, JSON ohne Spiel | ✅ | die beiden letzten waren F-01, behoben |
 | 409 durch veralteten zweiten Tab | ✅ | |
 | Neuladen: Spiel bleibt, offene Schlag-Auswahl verworfen | ✅ | |

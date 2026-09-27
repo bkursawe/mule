@@ -88,6 +88,12 @@ export class MulePage {
     return this.page.getByRole('button', { name: 'Neues Spiel beginnen' });
   }
 
+  /** Opens the closed "Neues Spiel" dialog below the move list. */
+  async openNewGameDialog() {
+    await this.page.getByText('Neues Spiel', { exact: true }).click();
+    await expect(this.newGameButton).toBeVisible();
+  }
+
   /** Waits until the computer has answered and it is the human's turn again. */
   async expectHumanTurn() {
     await expect(this.status).toContainText('Du bist am Zug');
