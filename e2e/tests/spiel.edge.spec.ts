@@ -71,6 +71,56 @@ test.describe('Eingaben zur falschen Zeit', () => {
     expect(moves.count).toBe(1);
   });
 
+  // F-04: the late answer used to replace the new game on the board and in the local storage
+  test('eine späte Antwort des Computers für das alte Spiel ändert das neue Spiel nicht', async ({ mule }) => {
+    await mule.openNewGame();
+    const computer = await mule.holdRequests('**/computer-move');
+    await mule.field('d6').click();
+    await computer.arrived;
+
+    await mule.openNewGameDialog();
+    await mule.newGameButton.click();
+    await expect(mule.page.getByRole('button', { name: /, frei$/ })).toHaveCount(24);
+    const lateAnswer = mule.page.waitForResponse('**/computer-move');
+    computer.release();
+    await lateAnswer;
+    await mule.page.unroute('**/computer-move');
+    // A move in the new game: the computer answers there and nothing of the old game shows up
+    await mule.field('a7').click();
+
+    await expect(mule.moveRounds).toHaveCount(1);
+    await expect(mule.page.getByRole('button', { name: /, weißer Stein$/ })).toHaveCount(1);
+    await mule.expectStone('a7', 'weißer Stein');
+    await mule.expectStone('d6', 'frei');
+    await mule.expectHumanTurn();
+    await mule.page.reload();
+    await mule.expectStone('a7', 'weißer Stein');
+    await mule.expectStone('d6', 'frei');
+  });
+
+  test('ein neues Spiel, das beim Laden der Seite beginnt, ersetzt nicht das zuletzt gespeicherte', async ({ mule }) => {
+    await mule.openNewGame();
+    await mule.field('d6').click();
+    await mule.expectHumanTurn();
+    const loading = await mule.holdRequests('**/api/games/*');
+
+    await mule.page.reload();
+    await loading.arrived;
+    await mule.openNewGameDialog();
+    const started = mule.page.waitForResponse((response) => response.url().endsWith('/api/games'));
+    await mule.newGameButton.click();
+    await started;
+    const lateAnswer = mule.page.waitForResponse('**/api/games/*');
+    loading.release();
+    await lateAnswer;
+    await mule.page.unroute('**/api/games/*');
+    await mule.field('a7').click();
+
+    await expect(mule.moveRounds).toHaveCount(1);
+    await mule.expectStone('a7', 'weißer Stein');
+    await mule.expectStone('d6', 'frei');
+  });
+
   test('nach Spielende sind alle Punkte gesperrt', async ({ mule }) => {
     // Black is to move and every black stone is surrounded
     await mule.openPosition({

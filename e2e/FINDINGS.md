@@ -12,17 +12,18 @@ Tastaturbedienung. Doppelte und verspätete Eingaben lösen keinen zweiten Zug a
 im Code war eine Serverantwort mit Status 200, aber ohne gültiges JSON: Dann fror das Brett ein und behauptete
 weiter „Du bist am Zug“. Dazu kam eine Regelfrage zur 50-Züge-Regel. Beide Befunde sind behoben.
 Nachtrag vom 27.09.2026: Auf einem Laptop ragten die Einstellungen für ein neues Spiel unten aus dem Bildschirm (F-03),
-behoben mit einem Dialog.
+behoben mit einem Dialog. Eine späte Antwort für ein altes Spiel konnte ein neu begonnenes Spiel ersetzen (F-04),
+ebenfalls behoben.
 
 | Schweregrad | Anzahl (davon behoben) |
 |---|---|
 | Blocker | 0 |
 | Hoch | 0 |
-| Mittel | 2 (2) |
+| Mittel | 3 (3) |
 | Niedrig | 1 (1) |
 | Kosmetisch | 0 |
 
-**Tests:** 69 insgesamt (51 Desktop, 18 Mobil) · 69 grün · 0 rot · 0 als bekannter Fehler markiert.
+**Tests:** 71 insgesamt (53 Desktop, 18 Mobil) · 71 grün · 0 rot · 0 als bekannter Fehler markiert.
 Stabil in fünf Wiederholungen je Test (`--repeat-each=5`), die neuen Tests vom 27.09.2026 ebenso.
 
 ---
@@ -100,6 +101,34 @@ Zugliste rutschen sie weiter nach unten.
 Zugliste; die Leiste war nicht in der Höhe begrenzt.
 **Behoben:** „Neues Spiel“ öffnet einen Dialog über dem Brett, am Spielende auch „Noch eine Partie“. Auf breiten
 Bildschirmen ist die Seite genau so hoch wie das Fenster, und nur die Zugliste scrollt.
+
+---
+
+### F-04 · Eine späte Antwort für das alte Spiel ersetzt ein neu begonnenes Spiel · **Mittel** · behoben
+
+- **Kategorie:** Nebenläufigkeit
+- **Art:** Fehler in der App
+- **Betrifft:** „Neues Spiel“, während der Computer noch rechnet oder die Seite das gespeicherte Spiel noch lädt
+
+**Reproduktion**
+
+1. Einen Stein setzen; der Computer überlegt (auf den Stufen Stark und Meister 1–3 s).
+2. In dieser Zeit ein neues Spiel beginnen.
+3. Die Antwort des Computers für das alte Spiel kommt an.
+
+Automatisiert in `e2e/tests/spiel.edge.spec.ts` → „eine späte Antwort des Computers für das alte Spiel ändert das neue
+Spiel nicht“ und „ein neues Spiel, das beim Laden der Seite beginnt, ersetzt nicht das zuletzt gespeicherte“; beide
+Tests halten die Anfrage mit `holdRequests` fest.
+
+**Erwartet:** Das neue Spiel bleibt auf dem Brett, die Antwort für das alte Spiel wird verworfen.
+**Tatsächlich:** Das Brett springt zurück zum alten Spiel, dessen ID landet wieder in `mule.game`, und der nächste
+Zug geht in das alte Spiel.
+
+**Ursache:** `run()` in `app.js` übernahm jede Antwort als aktuelles Spiel, egal wann sie ankam. Ebenso gab die
+späte Antwort das Brett frei, obwohl die Anfrage des neuen Spiels noch lief.
+**Behoben:** Jedes neue Spiel erhöht einen Zähler. Antworten und Fehler für einen älteren Stand verwirft `run()`
+und lässt das Brett gesperrt, bis die Anfrage des neuen Spiels fertig ist. Der Computerzug nach der kurzen Pause und
+das Laden des gespeicherten Spiels beim Start prüfen den Zähler ebenso.
 
 ---
 
