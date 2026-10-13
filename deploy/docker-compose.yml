@@ -1,0 +1,24 @@
+# Mühle behind the shared Caddy of the server (caddy-docker-proxy, see edge/). The container has no public port:
+# Caddy reaches it over the network "edge", finds it by its labels and obtains the certificate for MULE_DOMAIN.
+#
+#   docker compose up -d --build      # start or update, from this folder
+#
+# The games live in memory, so an update ends the running games. See README.md.
+name: muehle
+
+services:
+  app:
+    build:
+      context: ..
+    image: mule:latest
+    restart: unless-stopped
+    networks:
+      - edge
+    labels:
+      caddy: ${MULE_DOMAIN:-muehle.praxisit.de}
+      caddy.encode: zstd gzip
+      caddy.reverse_proxy: "{{upstreams 8080}}"
+
+networks:
+  edge:
+    external: true

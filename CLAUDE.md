@@ -48,6 +48,9 @@ Aufbau des Images:
 - `frontend/`: statisches HTML/CSS/JS ohne Build-Schritt; `processResources` kopiert es nach `static/`,
   der Server liefert es unter `/` aus. Schriften (Marcellus, Alegreya Sans) liegen selbst gehostet in
   `frontend/fonts/` mit ihren OFL-Lizenzen, damit keine Anfrage an einen Schriftdienst geht.
+- `deploy/`: Betrieb auf einem Server hinter einem gemeinsamen Edge-Proxy (caddy-docker-proxy, Vorlage in
+  `deploy/edge/`). Apps hängen im Docker-Netz `edge` und tragen ihre Domain als Label ein; Mühle hat keinen
+  öffentlichen Port. Anleitung, auch für die Umstellung anderer Apps, in `deploy/README.md`.
 - `e2e/`: Playwright-Tests der Oberfläche. `spiel.spec.ts` für die Hauptabläufe, `spiel.edge.spec.ts` für Randfälle,
   `support/mule.ts` für Selektoren und Spielstart. Stand, Testdaten und Befunde in `TESTPLAN.md`, `TESTDATEN.md`,
   `FINDINGS.md`.

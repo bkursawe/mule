@@ -1,0 +1,42 @@
+# The one service on the server that owns ports 80 and 443: Caddy with the caddy-docker-proxy plugin.
+# It watches Docker for containers with "caddy" labels on the network "edge", routes their domains to them and
+# obtains and renews the certificates. Apps have no public ports and never touch this file.
+#
+#   docker network create edge        # once per server
+#   cp .env.example .env              # set ACME_EMAIL
+#   docker compose up -d
+#
+# Meant as its own project on the server, e.g. /opt/edge. See ../README.md.
+name: edge
+
+services:
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:2.13-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      # Upstreams are taken from this network, also for containers that are on further networks
+      CADDY_INGRESS_NETWORKS: edge
+    networks:
+      - edge
+    volumes:
+      # Read access to Docker, to find the labelled containers. Whoever can use this socket controls Docker,
+      # so only this container gets it.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # The certificates: without this volume every restart orders new ones
+      - caddy-data:/data
+      - caddy-config:/config
+    labels:
+      # Global option: contact address for Let's Encrypt, e.g. for expiry warnings
+      caddy.email: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  caddy-data:
+  caddy-config:
