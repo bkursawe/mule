@@ -46,8 +46,10 @@ COPY --from=build /app/application/ lib/
 USER 10001:10001
 # The heap follows the memory limit of the container. After an OutOfMemoryError the JVM exits, so a restart policy
 # can start it anew instead of it carrying on in a broken state. Both can be overridden with -e JDK_JAVA_OPTIONS=...
+# -XX:-UseBASE64Intrinsics: workaround for CVE-2026-114938 (Java4Shell, heap overflow in the x86-64 Base64 decoder
+# intrinsic, RCE). Drop it once the base image is Temurin 21.0.13.1 or newer. Overriding JDK_JAVA_OPTIONS must keep it.
 ENV PORT=8080 \
-    JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+    JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -XX:-UseBASE64Intrinsics"
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --start-interval=2s --retries=3 \
     CMD ["sh", "-c", "curl -fsS \"http://localhost:${PORT}/health\" || exit 1"]
